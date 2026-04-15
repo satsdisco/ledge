@@ -9,8 +9,15 @@ final class ActiveModuleStore {
     private let availableIDs: [String]
 
     var activeID: String {
-        didSet { UserDefaults.standard.set(activeID, forKey: key) }
+        didSet {
+            UserDefaults.standard.set(activeID, forKey: key)
+            onActiveChange?(activeID)
+        }
     }
+
+    /// Notified when the active module changes. Used by PanelManager to
+    /// re-size the panel to the new module's preferred footprint.
+    var onActiveChange: ((String) -> Void)?
 
     init(defaultID: String, availableIDs: [String]) {
         self.defaultID = defaultID

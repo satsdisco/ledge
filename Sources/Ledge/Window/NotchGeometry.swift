@@ -68,13 +68,17 @@ enum NotchGeometry {
     static func collapsedPanelRect(
         for screen: ScreenDescriptor,
         synthetic: Bool,
-        tongue: CGFloat = 0
+        tongue: CGFloat = 0,
+        horizontalInset: CGFloat = 1
     ) -> CGRect? {
         guard let notch = notchRect(for: screen, synthetic: synthetic) else { return nil }
+        // Inset horizontally by 1pt to absorb sub-pixel rounding on
+        // auxiliaryTopLeftArea.maxX / auxiliaryTopRightArea.minX, which can
+        // otherwise leave a hairline of panel fill outside the physical cutout.
         return CGRect(
-            x: notch.minX,
+            x: notch.minX + horizontalInset,
             y: notch.minY - tongue,
-            width: notch.width,
+            width: notch.width - horizontalInset * 2,
             height: notch.height + tongue
         )
     }

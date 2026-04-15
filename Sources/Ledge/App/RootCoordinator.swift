@@ -11,18 +11,25 @@ final class RootCoordinator {
     private lazy var fileShelf = FileShelfModule(environment: env)
     private lazy var nowPlaying = NowPlayingModule(environment: env)
     private lazy var timer = TimerModule(environment: env)
+    private lazy var clocks = ClocksModule(environment: env)
+    private lazy var bitcoin = BitcoinPriceModule(environment: env)
+
+    /// Exposed for Settings UI so it can edit the clocks list live.
+    var clocksStore: ClocksStore { clocks.store }
     private lazy var active = ActiveModuleStore(
         defaultID: FileShelfModule.identifier,
         availableIDs: [
             FileShelfModule.identifier,
             NowPlayingModule.identifier,
-            TimerModule.identifier
+            TimerModule.identifier,
+            ClocksModule.identifier,
+            BitcoinPriceModule.identifier
         ]
     )
     private lazy var panels = PanelManager(
         expansion: expansion,
         active: active,
-        modules: [fileShelf, nowPlaying, timer]
+        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin]
     )
     private lazy var displays = DisplayCoordinator { [weak self] screens in
         self?.panels.reconcile(with: screens)
@@ -33,6 +40,8 @@ final class RootCoordinator {
         registry.register(fileShelf)
         registry.register(nowPlaying)
         registry.register(timer)
+        registry.register(clocks)
+        registry.register(bitcoin)
         registry.bootstrap()
         _ = shortcuts
         displays.start()

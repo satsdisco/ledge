@@ -17,6 +17,12 @@ final class PanelManager {
         expansion.onPhaseChange = { [weak self] phase in
             self?.animate(to: phase)
         }
+        // Re-animate when the user switches modules while expanded so the
+        // panel resizes to the new module's preferred footprint.
+        active.onActiveChange = { [weak self] _ in
+            guard let self, self.expansion.phase == .expanded else { return }
+            self.animate(to: .expanded)
+        }
     }
 
     func reconcile(with screens: [ScreenDescriptor]) {
@@ -40,10 +46,14 @@ final class PanelManager {
             }
 
             let panel = NotchPanel(screen: screen, contentRect: rect)
+            let notchHeight = screen.safeAreaTop > 0
+                ? screen.safeAreaTop
+                : NotchGeometry.syntheticSize.height
             panel.install(content: NotchSurfaceView(
                 expansion: expansion,
                 active: active,
-                modules: modules
+                modules: modules,
+                notchHeight: notchHeight
             ))
             panel.show()
             panels[screen.displayID] = panel
@@ -63,7 +73,14 @@ final class PanelManager {
         case .collapsed:
             return NotchGeometry.collapsedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch)
         case .expanded:
-            return NotchGeometry.expandedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch)
+            let activeModule = modules.first { type(of: $0).identifier == active.activeID } ?? modules.first
+            let size = activeModule?.preferredExpandedSize ?? CGSize(width: 420, height: 140)
+            return NotchGeometry.expandedPanelRect(
+                for: screen,
+                synthetic: FeatureFlags.syntheticNotch,
+                width: size.width,
+                height: size.height
+            )
         }
     }
 

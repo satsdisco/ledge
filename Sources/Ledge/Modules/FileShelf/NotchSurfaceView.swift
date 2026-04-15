@@ -8,6 +8,9 @@ struct NotchSurfaceView: View {
     @Bindable var expansion: NotchExpansionController
     @Bindable var active: ActiveModuleStore
     let modules: [LedgeModule]
+    /// Height of the physical notch cutout on this screen. Used to push
+    /// expanded content below the cutout region so it isn't hidden.
+    let notchHeight: CGFloat
 
     @State private var dropTargeted = false
     @Environment(\.openSettings) private var openSettingsScene
@@ -46,14 +49,22 @@ struct NotchSurfaceView: View {
 
     // MARK: - Shape
 
-    private var shape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(
-            topLeadingRadius: 0,
-            bottomLeadingRadius: expansion.phase == .expanded ? 22 : 12,
-            bottomTrailingRadius: expansion.phase == .expanded ? 22 : 12,
-            topTrailingRadius: 0,
-            style: .continuous
-        )
+    /// Collapsed: match the hardware notch cutout (concave bottom fillets)
+    /// so we never bleed onto the menu bar.
+    /// Expanded: conventional drawer with rounded bottom corners.
+    private var shape: AnyShape {
+        switch expansion.phase {
+        case .collapsed:
+            return AnyShape(NotchCutoutShape(filletRadius: 10))
+        case .expanded:
+            return AnyShape(UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 22,
+                bottomTrailingRadius: 22,
+                topTrailingRadius: 0,
+                style: .continuous
+            ))
+        }
     }
 
     // MARK: - Content
@@ -77,6 +88,9 @@ struct NotchSurfaceView: View {
                         .transition(.opacity)
                 }
             }
+            // Push content below the physical notch cutout so nothing gets
+            // obscured by the hardware bezel.
+            .padding(.top, notchHeight)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .transition(.opacity)
         }

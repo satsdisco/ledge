@@ -29,6 +29,10 @@ final class TimerModule: LedgeModule {
                                   onReset:    { [weak self] in self?.reset() }))
     }
 
+    /// Timer needs vertical room for presets row + 28pt mono countdown +
+    /// transport row, on top of the notch-cutout padding.
+    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 180) }
+
     // MARK: - Intents
 
     func setPreset(_ seconds: Int) {

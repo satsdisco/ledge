@@ -13,6 +13,10 @@ protocol LedgeModule: AnyObject {
     var acceptsDrops: Bool { get }
     func handleDrop(_ providers: [NSItemProvider]) -> Bool
 
+    /// Preferred panel size when this module is active and the notch is expanded.
+    /// Modules with content-heavy expanded views (Clocks, Shelf grid) ask for more room.
+    var preferredExpandedSize: CGSize { get }
+
     func didActivate()
     func willDeactivate()
 }
@@ -20,6 +24,7 @@ protocol LedgeModule: AnyObject {
 extension LedgeModule {
     var acceptsDrops: Bool { false }
     func handleDrop(_ providers: [NSItemProvider]) -> Bool { false }
+    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 140) }
     func didActivate() {}
     func willDeactivate() {}
 }
