@@ -8,7 +8,9 @@ struct LedgeApp: App {
         Settings {
             SettingsScene(
                 loginItem: appDelegate.coordinator.loginItem,
-                clocksStore: appDelegate.coordinator.clocksStore
+                clocksStore: appDelegate.coordinator.clocksStore,
+                enabledStore: appDelegate.coordinator.enabledStore,
+                modulesCatalog: appDelegate.coordinator.modulesCatalog
             )
         }
     }

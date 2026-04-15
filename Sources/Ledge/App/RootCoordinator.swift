@@ -14,23 +14,38 @@ final class RootCoordinator {
     private lazy var clocks = ClocksModule(environment: env)
     private lazy var bitcoin = BitcoinPriceModule(environment: env)
 
+    private static let allModuleIDs: [String] = [
+        FileShelfModule.identifier,
+        NowPlayingModule.identifier,
+        TimerModule.identifier,
+        ClocksModule.identifier,
+        BitcoinPriceModule.identifier
+    ]
+
     /// Exposed for Settings UI so it can edit the clocks list live.
     var clocksStore: ClocksStore { clocks.store }
+    let enabledStore = ModuleEnabledStore(allIDs: RootCoordinator.allModuleIDs)
     private lazy var active = ActiveModuleStore(
         defaultID: FileShelfModule.identifier,
-        availableIDs: [
-            FileShelfModule.identifier,
-            NowPlayingModule.identifier,
-            TimerModule.identifier,
-            ClocksModule.identifier,
-            BitcoinPriceModule.identifier
-        ]
+        availableIDs: RootCoordinator.allModuleIDs
     )
     private lazy var panels = PanelManager(
         expansion: expansion,
         active: active,
+        enabled: enabledStore,
         modules: [fileShelf, nowPlaying, timer, clocks, bitcoin]
     )
+
+    /// Display info for Settings to render the modules list with names + icons.
+    var modulesCatalog: [(id: String, name: String, icon: String)] {
+        [
+            (FileShelfModule.identifier,    "File Shelf",  "tray.full"),
+            (NowPlayingModule.identifier,   "Now Playing", "music.note"),
+            (TimerModule.identifier,        "Timer",       "timer"),
+            (ClocksModule.identifier,       "Clocks",      "globe"),
+            (BitcoinPriceModule.identifier, "Bitcoin",     "bitcoinsign.circle")
+        ]
+    }
     private lazy var displays = DisplayCoordinator { [weak self] screens in
         self?.panels.reconcile(with: screens)
     }

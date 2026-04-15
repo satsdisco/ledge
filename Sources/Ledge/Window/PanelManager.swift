@@ -8,20 +8,34 @@ final class PanelManager {
     private var panels: [CGDirectDisplayID: NotchPanel] = [:]
     private let expansion: NotchExpansionController
     private let active: ActiveModuleStore
+    private let enabled: ModuleEnabledStore
     private let modules: [LedgeModule]
 
-    init(expansion: NotchExpansionController, active: ActiveModuleStore, modules: [LedgeModule]) {
+    init(expansion: NotchExpansionController,
+         active: ActiveModuleStore,
+         enabled: ModuleEnabledStore,
+         modules: [LedgeModule]) {
         self.expansion = expansion
         self.active = active
+        self.enabled = enabled
         self.modules = modules
         expansion.onPhaseChange = { [weak self] phase in
             self?.animate(to: phase)
         }
-        // Re-animate when the user switches modules while expanded so the
-        // panel resizes to the new module's preferred footprint.
         active.onActiveChange = { [weak self] _ in
             guard let self, self.expansion.phase == .expanded else { return }
             self.animate(to: .expanded)
+        }
+        enabled.onChange = { [weak self] in
+            guard let self else { return }
+            // If the user disabled the active module, switch to the first enabled.
+            if !self.enabled.isEnabled(self.active.activeID),
+               let firstEnabled = self.modules.first(where: { self.enabled.isEnabled(type(of: $0).identifier) }) {
+                self.active.activeID = type(of: firstEnabled).identifier
+            }
+            if self.expansion.phase == .expanded {
+                self.animate(to: .expanded)
+            }
         }
     }
 
@@ -52,6 +66,7 @@ final class PanelManager {
             panel.install(content: NotchSurfaceView(
                 expansion: expansion,
                 active: active,
+                enabled: enabled,
                 modules: modules,
                 notchHeight: notchHeight
             ))
@@ -85,10 +100,11 @@ final class PanelManager {
     }
 
     private func animate(to phase: NotchExpansionController.Phase) {
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         for panel in panels.values {
             guard let rect = currentRect(for: panel.screenDescriptor) else { continue }
             NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.22
+                ctx.duration = reduced ? 0.10 : 0.22
                 ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
                 ctx.allowsImplicitAnimation = true
                 panel.animator().setFrame(rect, display: true)

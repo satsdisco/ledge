@@ -7,16 +7,23 @@ import UniformTypeIdentifiers
 struct NotchSurfaceView: View {
     @Bindable var expansion: NotchExpansionController
     @Bindable var active: ActiveModuleStore
+    @Bindable var enabled: ModuleEnabledStore
     let modules: [LedgeModule]
     /// Height of the physical notch cutout on this screen. Used to push
     /// expanded content below the cutout region so it isn't hidden.
     let notchHeight: CGFloat
 
+    /// Modules visible after the user's enable/disable choices.
+    private var visibleModules: [LedgeModule] {
+        modules.filter { enabled.isEnabled(type(of: $0).identifier) }
+    }
+
     @State private var dropTargeted = false
     @Environment(\.openSettings) private var openSettingsScene
 
     private var activeModule: LedgeModule? {
-        modules.first { type(of: $0).identifier == active.activeID } ?? modules.first
+        let pool = visibleModules.isEmpty ? modules : visibleModules
+        return pool.first { type(of: $0).identifier == active.activeID } ?? pool.first
     }
 
     var body: some View {
@@ -26,8 +33,8 @@ struct NotchSurfaceView: View {
             .overlay(
                 shape.stroke(.white.opacity(dropTargeted ? 0.35 : 0.06), lineWidth: 1)
             )
-            .animation(.interpolatingSpring(stiffness: 320, damping: 28), value: expansion.phase)
-            .animation(.interpolatingSpring(stiffness: 220, damping: 30), value: active.activeID)
+            .animation(Motion.express, value: expansion.phase)
+            .animation(Motion.calm, value: active.activeID)
             .contentShape(Rectangle())
             .onHover { hovering in
                 hovering ? expansion.hoverEntered() : expansion.hoverExited()
@@ -79,7 +86,7 @@ struct NotchSurfaceView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .expanded:
             VStack(spacing: 0) {
-                if modules.count > 1 {
+                if visibleModules.count > 1 {
                     moduleSwitcher
                 }
                 if let module = activeModule {
@@ -98,7 +105,7 @@ struct NotchSurfaceView: View {
 
     private var moduleSwitcher: some View {
         HStack(spacing: 4) {
-            ForEach(modules, id: \.objectIdentifier) { module in
+            ForEach(visibleModules, id: \.objectIdentifier) { module in
                 let isActive = active.activeID == type(of: module).identifier
                 Button {
                     active.activeID = type(of: module).identifier
@@ -123,7 +130,7 @@ struct NotchSurfaceView: View {
 
     @ViewBuilder
     private var contextMenu: some View {
-        ForEach(modules, id: \.objectIdentifier) { module in
+        ForEach(visibleModules, id: \.objectIdentifier) { module in
             let isActive = active.activeID == type(of: module).identifier
             Button(isActive ? "✓ \(module.displayName)" : module.displayName) {
                 active.activeID = type(of: module).identifier

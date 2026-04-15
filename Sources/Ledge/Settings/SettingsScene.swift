@@ -1,14 +1,17 @@
 import SwiftUI
+import AppKit
 
 struct SettingsScene: View {
     let loginItem: LoginItemService
     let clocksStore: ClocksStore
+    let enabledStore: ModuleEnabledStore
+    let modulesCatalog: [(id: String, name: String, icon: String)]
 
     var body: some View {
         TabView {
             GeneralPane(loginItem: loginItem)
                 .tabItem { Label("General", systemImage: "gear") }
-            ModulesPane()
+            ModulesPane(enabled: enabledStore, catalog: modulesCatalog)
                 .tabItem { Label("Modules", systemImage: "square.grid.2x2") }
             ClocksPane(store: clocksStore)
                 .tabItem { Label("Clocks", systemImage: "globe") }
@@ -19,41 +22,69 @@ struct SettingsScene: View {
             AboutPane()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 520, height: 380)
+        .frame(width: 540, height: 420)
     }
 }
+
+// MARK: - General
 
 private struct GeneralPane: View {
     @Bindable var loginItem: LoginItemService
 
     var body: some View {
         Form {
-            Toggle("Launch Ledge at login", isOn: Binding(
-                get: { loginItem.isEnabled },
-                set: { loginItem.set($0) }
-            ))
-            Text("Ledge runs as a menu-bar-less accessory. Close the Settings window to send it back to the notch.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Section {
+                Toggle("Launch Ledge at login", isOn: Binding(
+                    get: { loginItem.isEnabled },
+                    set: { loginItem.set($0) }
+                ))
+            } footer: {
+                Text("Ledge runs as a menu-bar-less accessory. Close this window to send it back to the notch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Activation") {
+                LabeledContent("Toggle expand", value: "⌃⌥Space")
+                LabeledContent("Right-click", value: "Module switcher · Settings · Quit")
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding()
+        .formStyle(.grouped)
     }
 }
 
+// MARK: - Modules
+
 private struct ModulesPane: View {
+    @Bindable var enabled: ModuleEnabledStore
+    let catalog: [(id: String, name: String, icon: String)]
+
     var body: some View {
         Form {
-            Section("Active modules") {
-                HStack { Image(systemName: "tray.full"); Text("File Shelf"); Spacer(); Text("On").foregroundStyle(.secondary) }
-                HStack { Image(systemName: "music.note"); Text("Now Playing"); Spacer(); Text("On").foregroundStyle(.secondary) }
-                HStack { Image(systemName: "timer"); Text("Timer"); Spacer(); Text("On").foregroundStyle(.secondary) }
-                HStack { Image(systemName: "globe"); Text("Clocks"); Spacer(); Text("On").foregroundStyle(.secondary) }
+            Section {
+                ForEach(catalog, id: \.id) { item in
+                    Toggle(isOn: Binding(
+                        get: { enabled.isEnabled(item.id) },
+                        set: { enabled.setEnabled(item.id, $0) }
+                    )) {
+                        Label {
+                            Text(item.name).font(.body)
+                        } icon: {
+                            Image(systemName: item.icon)
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                }
+            } header: {
+                Text("Available modules")
+            } footer: {
+                Text("Disabled modules disappear from the segmented header and the right-click menu. Each module's data is preserved when you re-enable it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text("Per-module disable arrives in a later release. Switch the visible module from the expanded panel.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
-        .padding()
+        .formStyle(.grouped)
     }
 }
 
@@ -82,39 +113,41 @@ private struct ClocksPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("World Clocks")
-                    .font(.title3.weight(.semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("World Clocks")
+                        .font(.title3.weight(.semibold))
+                    Text("Up to \(ClocksStore.maxEntries). The first non-local clock shows in the collapsed notch.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Menu {
                     Button("Reset to defaults") { store.resetToDefaults() }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
             }
-            Text("Up to \(ClocksStore.maxEntries) clocks. The first non-local one shows in the collapsed notch.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 12)
+            .padding(.bottom, 12)
 
             List {
                 ForEach(store.entries) { entry in
                     clockRow(entry)
-                        .listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6))
+                        .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                 }
                 .onMove { store.move(from: $0, to: $1) }
             }
-            .frame(minHeight: 180)
+            .frame(minHeight: 200)
             .scrollContentBackground(.hidden)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(nsColor: .separatorColor).opacity(0.15))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(nsColor: .quaternaryLabelColor).opacity(0.25))
             )
 
-            addControls
-                .padding(.top, 12)
+            addControls.padding(.top, 12)
         }
         .padding()
     }
@@ -122,8 +155,7 @@ private struct ClocksPane: View {
     private func clockRow(_ entry: ClockEntry) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(.quaternary)
+                RoundedRectangle(cornerRadius: 6).fill(.quaternary)
                 Image(systemName: entry.style == .analog ? "clock" : "textformat.123")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -131,11 +163,8 @@ private struct ClocksPane: View {
             .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(entry.displayLabel)
-                    .font(.system(size: 13, weight: .semibold))
-                Text(entry.timeZoneIdentifier)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                Text(entry.displayLabel).font(.system(size: 13, weight: .semibold))
+                Text(entry.timeZoneIdentifier).font(.system(size: 10)).foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -143,7 +172,7 @@ private struct ClocksPane: View {
             Text(entry.offsetLabel())
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(.secondary)
-                .frame(width: 36, alignment: .trailing)
+                .frame(width: 40, alignment: .trailing)
 
             Picker("", selection: Binding(
                 get: { entry.style },
@@ -161,6 +190,7 @@ private struct ClocksPane: View {
             } label: {
                 Image(systemName: "minus.circle.fill")
                     .foregroundStyle(.red.opacity(0.65))
+                    .font(.system(size: 14))
             }
             .buttonStyle(.borderless)
         }
@@ -168,14 +198,14 @@ private struct ClocksPane: View {
 
     private var addControls: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Add clock")
-                .font(.system(size: 11, weight: .medium))
+            Text("Add a clock")
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .tracking(0.3)
             HStack(spacing: 8) {
                 Picker("", selection: $pickerZoneID) {
                     ForEach(Self.popularZones, id: \.self) { id in
-                        Text(ClockEntry.derivedLabel(for: id).capitalized)
-                            .tag(id)
+                        Text(ClockEntry.derivedLabel(for: id).capitalized).tag(id)
                     }
                 }
                 .labelsHidden()
@@ -202,44 +232,67 @@ private struct ClocksPane: View {
                     ))
                     pickerLabel = ""
                 }
+                .keyboardShortcut(.return)
                 .disabled(store.entries.count >= ClocksStore.maxEntries)
             }
         }
     }
 }
 
+// MARK: - Shortcuts
+
 private struct ShortcutsPane: View {
     var body: some View {
         Form {
-            LabeledContent("Toggle Ledge") {
-                Text("⌃⌥Space")
-                    .font(.system(.body, design: .monospaced))
+            Section("Global shortcut") {
+                LabeledContent("Toggle Ledge") {
+                    Text("⌃⌥Space")
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Section {
+                Text("Customizable bindings ship in v1.1 once Ledge moves to an Xcode project — the recorder library depends on macro plugins only Xcode includes.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("Customizable bindings arrive once Ledge moves to an Xcode project (the shortcut recorder library depends on macro plugins only Xcode ships).")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
-        .padding()
+        .formStyle(.grouped)
     }
 }
+
+// MARK: - Advanced
 
 private struct AdvancedPane: View {
     var body: some View {
         Form {
-            Toggle("Show synthetic notch on non-notch displays",
-                   isOn: flagBinding("syntheticNotch"))
-            Toggle("Debug overlay",
-                   isOn: flagBinding("debugOverlay"))
-            Text("Takes effect on next launch.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Divider()
-            Button("Open log directory") {
-                NSWorkspace.shared.open(FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first!.appendingPathComponent("Logs"))
+            Section("Display") {
+                Toggle("Show on non-notch displays (synthetic notch)",
+                       isOn: flagBinding("syntheticNotch"))
+            }
+            Section {
+                Toggle("Debug overlay", isOn: flagBinding("debugOverlay"))
+                Button("Open log directory") {
+                    let logs = FileManager.default
+                        .urls(for: .libraryDirectory, in: .userDomainMask).first!
+                        .appendingPathComponent("Logs")
+                    NSWorkspace.shared.open(logs)
+                }
+                Button("Open application support directory") {
+                    let support = FileManager.default
+                        .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+                        .appendingPathComponent("Ledge")
+                    NSWorkspace.shared.open(support)
+                }
+            } header: {
+                Text("Diagnostics")
+            } footer: {
+                Text("Display changes take effect on next launch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding()
+        .formStyle(.grouped)
     }
 
     private func flagBinding(_ key: String) -> Binding<Bool> {
@@ -251,15 +304,50 @@ private struct AdvancedPane: View {
     }
 }
 
+// MARK: - About
+
 private struct AboutPane: View {
+    private var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    }
+    private var build: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
     var body: some View {
-        VStack(spacing: 8) {
-            Text("Ledge").font(.system(size: 22, weight: .semibold))
-            Text("A native macOS notch utility.")
-                .foregroundStyle(.secondary)
-            Text("v0.6.0")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+        VStack(spacing: 14) {
+            Spacer(minLength: 8)
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [.black.opacity(0.85), Color(nsColor: .windowBackgroundColor)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+                Image(systemName: "rectangle.portrait.topthird.inset.filled")
+                    .font(.system(size: 38, weight: .light))
+                    .foregroundStyle(.white.opacity(0.92))
+            }
+            .frame(width: 92, height: 92)
+            .shadow(color: .black.opacity(0.2), radius: 8, y: 2)
+
+            VStack(spacing: 2) {
+                Text("Ledge").font(.system(size: 22, weight: .semibold))
+                Text("A native macOS notch utility")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 2) {
+                Text("Version \(version) (build \(build))")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                Text("© 2026 satsdisco")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
