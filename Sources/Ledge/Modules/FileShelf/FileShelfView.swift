@@ -113,9 +113,11 @@ private struct ShelfItemView: View {
             Text(item.displayName)
                 .font(.system(size: 9))
                 .foregroundStyle(.white.opacity(0.75))
-                .lineLimit(1)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
                 .truncationMode(.middle)
-                .frame(width: 60)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 72)
         }
         .padding(4)
         .background(

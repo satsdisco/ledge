@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import KeyboardShortcuts
 
 struct SettingsScene: View {
     let loginItem: LoginItemService
@@ -244,15 +245,12 @@ private struct ClocksPane: View {
 private struct ShortcutsPane: View {
     var body: some View {
         Form {
-            Section("Global shortcut") {
-                LabeledContent("Toggle Ledge") {
-                    Text("⌃⌥Space")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-            }
             Section {
-                Text("Customizable bindings ship in v1.1 once Ledge moves to an Xcode project — the recorder library depends on macro plugins only Xcode includes.")
+                KeyboardShortcuts.Recorder("Toggle Ledge", name: .toggleLedge)
+            } header: {
+                Text("Global shortcut")
+            } footer: {
+                Text("Click the recorder to rebind. Press the new combination, or double-click to clear.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

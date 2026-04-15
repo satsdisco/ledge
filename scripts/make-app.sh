@@ -24,7 +24,27 @@ if compgen -G "$BIN_PATH/Ledge_Ledge.bundle" > /dev/null; then
     cp -R "$BIN_PATH/Ledge_Ledge.bundle" "$CONTENTS/Resources/"
 fi
 
-codesign --force --sign - --timestamp=none "$APP_DIR"
+# Also copy any SwiftPM SPM dependency bundles (e.g. KeyboardShortcuts_KeyboardShortcuts.bundle).
+shopt -s nullglob
+for bundle in "$BIN_PATH"/*.bundle; do
+    name="$(basename "$bundle")"
+    [[ "$name" == "Ledge_Ledge.bundle" ]] && continue
+    cp -R "$bundle" "$CONTENTS/Resources/"
+done
+shopt -u nullglob
+
+# Sign with Hardened Runtime + entitlements (ad-hoc identity for personal builds).
+# Once you set up Developer ID, swap `-` for `Developer ID Application: NAME (TEAMID)`.
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+codesign --force \
+    --sign "$SIGN_IDENTITY" \
+    --options runtime \
+    --entitlements "Resources/Ledge.entitlements" \
+    --timestamp=none \
+    "$APP_DIR"
+
+echo "Verifying signature…"
+codesign --verify --deep --strict --verbose=2 "$APP_DIR" 2>&1 | tail -3 || true
 
 echo
 echo "✅ Built $APP_DIR"

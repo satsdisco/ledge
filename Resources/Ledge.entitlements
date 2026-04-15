@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Hardened Runtime requirements for Developer ID + notarization. -->
+    <!-- Outbound network for the Bitcoin module (CoinGecko) and any future appcast/Sparkle update checks. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- AppleScript control of Music + Spotify for the Now Playing module.
+         AppleEvents are restricted under Hardened Runtime; this entitlement
+         allows them. macOS still prompts the user for per-app Automation
+         permission the first time we target each source app. -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+
+    <!-- Ledge is NOT sandboxed in v1. Direct download via Developer ID,
+         not Mac App Store, so we don't need (and don't want) the sandbox
+         restrictions yet. If we ever ship to the App Store, set
+         com.apple.security.app-sandbox = true and revisit file access. -->
+
+    <!-- Future: if we adopt Sparkle's auto-update with installer privileges,
+         add com.apple.security.cs.allow-unsigned-executable-memory and
+         com.apple.security.cs.disable-library-validation here. Not needed
+         today. -->
+</dict>
+</plist>
