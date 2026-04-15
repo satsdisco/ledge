@@ -1,15 +1,16 @@
-import XCTest
+import Testing
 @testable import Ledge
 
-final class SmokeTests: XCTestCase {
-    func testRegistryBootstraps() {
+@Suite("Smoke")
+struct SmokeTests {
+    @Test func registryBootstraps() {
         let r = ModuleRegistry()
         r.bootstrap()
-        XCTAssertEqual(r.count, 0)
+        #expect(r.count == 0)
     }
 
-    func testFeatureFlagDefaults() {
-        XCTAssertTrue(FeatureFlags.mediaRemote)
-        XCTAssertFalse(FeatureFlags.syntheticNotch)
+    @Test func featureFlagDefaults() {
+        #expect(FeatureFlags.mediaRemote == true)
+        #expect(FeatureFlags.syntheticNotch == false)
     }
 }
