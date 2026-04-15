@@ -22,11 +22,13 @@ final class RootCoordinator {
     private lazy var displays = DisplayCoordinator { [weak self] screens in
         self?.panels.reconcile(with: screens)
     }
+    private lazy var shortcuts = KeyboardShortcutCenter(expansion: expansion)
 
     func start() {
         registry.register(fileShelf)
         registry.register(nowPlaying)
         registry.bootstrap()
+        _ = shortcuts
         displays.start()
         Log.app.debug("RootCoordinator started; \(self.registry.count) module(s) registered")
     }

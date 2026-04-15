@@ -1,16 +1,16 @@
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 
 /// The SwiftUI root installed into each NotchPanel. Composes whichever module
-/// is currently active, with hover + drop + shape, driven by the shared
-/// `NotchExpansionController`. Multi-module switching happens in the expanded
-/// header via a segmented control.
+/// is currently active, plus a combined "glance strip" in collapsed state.
 struct NotchSurfaceView: View {
     @Bindable var expansion: NotchExpansionController
     @Bindable var active: ActiveModuleStore
     let modules: [LedgeModule]
 
     @State private var dropTargeted = false
+    @Environment(\.openSettings) private var openSettingsScene
 
     private var activeModule: LedgeModule? {
         modules.first { type(of: $0).identifier == active.activeID } ?? modules.first
@@ -25,6 +25,7 @@ struct NotchSurfaceView: View {
             )
             .animation(.interpolatingSpring(stiffness: 320, damping: 28), value: expansion.phase)
             .animation(.interpolatingSpring(stiffness: 220, damping: 30), value: active.activeID)
+            .contentShape(Rectangle())
             .onHover { hovering in
                 hovering ? expansion.hoverEntered() : expansion.hoverExited()
             }
@@ -40,17 +41,10 @@ struct NotchSurfaceView: View {
             .onChange(of: dropTargeted) { _, targeted in
                 if targeted { expansion.dragEntered() } else { expansion.dragExited() }
             }
+            .contextMenu { contextMenu }
     }
 
-    private func activeDropModule() -> LedgeModule? {
-        if let current = activeModule, current.acceptsDrops { return current }
-        // If active module doesn't take drops but another does, route to that.
-        if let drop = modules.first(where: { $0.acceptsDrops }) {
-            active.activeID = type(of: drop).identifier
-            return drop
-        }
-        return nil
-    }
+    // MARK: - Shape
 
     private var shape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
@@ -62,17 +56,17 @@ struct NotchSurfaceView: View {
         )
     }
 
+    // MARK: - Content
+
     @ViewBuilder
     private var content: some View {
         switch expansion.phase {
         case .collapsed:
-            if let module = activeModule {
-                module.collapsedView
-                    .padding(.horizontal, 6)
-                    .padding(.bottom, 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .transition(.opacity)
-            }
+            CombinedCollapsedStrip(modules: modules)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 3)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .transition(.opacity)
         case .expanded:
             VStack(spacing: 0) {
                 if modules.count > 1 {
@@ -110,6 +104,57 @@ struct NotchSurfaceView: View {
             }
         }
         .padding(.top, 6)
+    }
+
+    // MARK: - Right-click menu
+
+    @ViewBuilder
+    private var contextMenu: some View {
+        ForEach(modules, id: \.objectIdentifier) { module in
+            let isActive = active.activeID == type(of: module).identifier
+            Button(isActive ? "✓ \(module.displayName)" : module.displayName) {
+                active.activeID = type(of: module).identifier
+                expansion.expand()
+            }
+        }
+        Divider()
+        Button("Settings…") {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            openSettingsScene()
+        }
+        Divider()
+        Button("Quit Ledge") { NSApp.terminate(nil) }
+    }
+
+    // MARK: - Drop routing
+
+    private func activeDropModule() -> LedgeModule? {
+        if let current = activeModule, current.acceptsDrops { return current }
+        if let drop = modules.first(where: { $0.acceptsDrops }) {
+            active.activeID = type(of: drop).identifier
+            return drop
+        }
+        return nil
+    }
+}
+
+// MARK: - Combined collapsed strip
+
+private struct CombinedCollapsedStrip: View {
+    let modules: [LedgeModule]
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(modules.enumerated()), id: \.offset) { index, module in
+                if index > 0 {
+                    Rectangle()
+                        .fill(.white.opacity(0.12))
+                        .frame(width: 1, height: 10)
+                }
+                module.collapsedView
+            }
+        }
     }
 }
 

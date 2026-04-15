@@ -1,11 +1,13 @@
 import Foundation
 import Observation
 
-/// Drives the panel's collapsed <-> expanded state. Single instance shared
-/// across all panels in Phase 2 (per-panel controllers are a Phase 3 concern).
+/// Drives the panel's collapsed <-> expanded state.
 ///
-/// Hover-to-expand uses 120ms debounce on enter, 350ms on exit.
-/// Drag-entered expands immediately, no debounce.
+/// Hysteresis:
+/// - Hover enter: 120ms debounce.
+/// - Hover exit:  350ms debounce + a minimum-expanded-hold so rapid pointer
+///   drift near the boundary doesn't thrash the panel.
+/// - Drag enter: immediate (drop targets must be responsive).
 @Observable
 final class NotchExpansionController {
     enum Phase: Equatable { case collapsed, expanded }
@@ -18,11 +20,18 @@ final class NotchExpansionController {
 
     private let enterDelay: TimeInterval
     private let exitDelay: TimeInterval
+    private let minExpandedHold: TimeInterval
     private var pending: DispatchWorkItem?
+    private var expandedAt: Date?
 
-    init(enterDelay: TimeInterval = 0.12, exitDelay: TimeInterval = 0.35) {
+    init(
+        enterDelay: TimeInterval = 0.12,
+        exitDelay: TimeInterval = 0.35,
+        minExpandedHold: TimeInterval = 0.40
+    ) {
         self.enterDelay = enterDelay
         self.exitDelay = exitDelay
+        self.minExpandedHold = minExpandedHold
     }
 
     // MARK: - Hover
@@ -32,7 +41,10 @@ final class NotchExpansionController {
     }
 
     func hoverExited() {
-        scheduleTransition(to: .collapsed, after: exitDelay)
+        let held = phase == .expanded
+            ? max(0, minExpandedHold - Date().timeIntervalSince(expandedAt ?? .distantPast))
+            : 0
+        scheduleTransition(to: .collapsed, after: exitDelay + held)
     }
 
     // MARK: - Drag
@@ -66,6 +78,7 @@ final class NotchExpansionController {
     private func commit(_ next: Phase) {
         guard phase != next else { return }
         phase = next
+        if next == .expanded { expandedAt = Date() }
         onPhaseChange?(next)
         Log.window.debug("Expansion -> \(next == .expanded ? "expanded" : "collapsed", privacy: .public)")
     }

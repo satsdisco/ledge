@@ -13,10 +13,6 @@ let package = Package(
             path: "Sources/Ledge",
             resources: [.process("Resources")]
         )
-        // NOTE: Test target temporarily disabled. The Command Line Tools
-        // toolchain does not ship XCTest/swift-testing modules in a way
-        // SwiftPM can resolve. Re-enable once full Xcode is installed
-        // (or when we promote to Ledge.xcodeproj in Phase 3+).
-        // Tests remain on disk at Tests/LedgeTests/.
+        // Test target temporarily disabled. Re-enable once full Xcode is installed.
     ]
 )

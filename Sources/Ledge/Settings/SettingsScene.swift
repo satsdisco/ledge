@@ -9,6 +9,8 @@ struct SettingsScene: View {
                 .tabItem { Label("General", systemImage: "gear") }
             ModulesPane()
                 .tabItem { Label("Modules", systemImage: "square.grid.2x2") }
+            ShortcutsPane()
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
             AdvancedPane()
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
             AboutPane()
@@ -60,6 +62,22 @@ private struct ModulesPane: View {
     }
 }
 
+private struct ShortcutsPane: View {
+    var body: some View {
+        Form {
+            LabeledContent("Toggle Ledge") {
+                Text("⌃⌥Space")
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            Text("Customizable bindings arrive once Ledge moves to an Xcode project (the shortcut recorder library depends on macro plugins only Xcode ships).")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+    }
+}
+
 private struct AdvancedPane: View {
     var body: some View {
         Form {
@@ -93,7 +111,7 @@ private struct AboutPane: View {
             Text("Ledge").font(.system(size: 22, weight: .semibold))
             Text("A native macOS notch utility.")
                 .foregroundStyle(.secondary)
-            Text("v0.3.0")
+            Text("v0.4.0")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
