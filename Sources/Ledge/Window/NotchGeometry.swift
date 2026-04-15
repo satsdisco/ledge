@@ -64,12 +64,11 @@ enum NotchGeometry {
 
     /// The visible panel frame when collapsed. The panel covers the notch rect (those
     /// pixels are the hardware cutout and are already black) plus a "tongue" extending
-    /// downward past the notch so the panel is actually visible. Phase 2 modules will
-    /// tune tongue height; Phase 1 uses a placeholder that makes positioning obvious.
+    /// downward past the notch so the panel is actually visible.
     static func collapsedPanelRect(
         for screen: ScreenDescriptor,
         synthetic: Bool,
-        tongue: CGFloat = 40
+        tongue: CGFloat = 8
     ) -> CGRect? {
         guard let notch = notchRect(for: screen, synthetic: synthetic) else { return nil }
         return CGRect(
@@ -78,5 +77,19 @@ enum NotchGeometry {
             width: notch.width,
             height: notch.height + tongue
         )
+    }
+
+    /// The panel frame when expanded. Grows wider and taller than the notch.
+    /// Centered horizontally on the notch, pinned to the top of the screen.
+    static func expandedPanelRect(
+        for screen: ScreenDescriptor,
+        synthetic: Bool,
+        width: CGFloat = 420,
+        height: CGFloat = 140
+    ) -> CGRect? {
+        guard let notch = notchRect(for: screen, synthetic: synthetic) else { return nil }
+        let x = notch.midX - width / 2
+        let y = screen.frame.maxY - height
+        return CGRect(x: x, y: y, width: width, height: height)
     }
 }

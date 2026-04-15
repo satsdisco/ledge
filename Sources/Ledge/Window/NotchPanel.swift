@@ -23,6 +23,7 @@ final class NotchPanel: NSPanel {
         isMovableByWindowBackground = false
         ignoresMouseEvents = false
         hidesOnDeactivate = false
+        acceptsMouseMovedEvents = true
         animationBehavior = .none
         setFrame(contentRect, display: false)
     }

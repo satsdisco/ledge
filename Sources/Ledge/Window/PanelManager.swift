@@ -3,25 +3,35 @@ import SwiftUI
 
 /// Owns one `NotchPanel` per eligible screen. Idempotent: safe to call
 /// `reconcile(with:)` repeatedly with the current screen list.
+/// Listens to the shared `NotchExpansionController` to animate panel frames
+/// between collapsed and expanded geometries.
 final class PanelManager {
     private var panels: [CGDirectDisplayID: NotchPanel] = [:]
+    private let expansion: NotchExpansionController
+    private let module: FileShelfModule
+
+    init(expansion: NotchExpansionController, module: FileShelfModule) {
+        self.expansion = expansion
+        self.module = module
+        expansion.onPhaseChange = { [weak self] phase in
+            self?.animate(to: phase)
+        }
+    }
 
     func reconcile(with screens: [ScreenDescriptor]) {
-        let eligible = screens.filter { screen in
-            NotchGeometry.collapsedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch) != nil
+        let eligible = screens.filter {
+            NotchGeometry.notchRect(for: $0, synthetic: FeatureFlags.syntheticNotch) != nil
         }
         let eligibleIDs = Set(eligible.map(\.displayID))
 
-        // Remove panels for screens that vanished or became ineligible.
         for (id, panel) in panels where !eligibleIDs.contains(id) {
             panel.hide()
             panels.removeValue(forKey: id)
             Log.window.info("Removed panel for displayID \(id)")
         }
 
-        // Create or update panels for eligible screens.
         for screen in eligible {
-            guard let rect = NotchGeometry.collapsedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch) else { continue }
+            guard let rect = currentRect(for: screen) else { continue }
 
             if let existing = panels[screen.displayID] {
                 existing.updateFrame(rect)
@@ -29,7 +39,7 @@ final class PanelManager {
             }
 
             let panel = NotchPanel(screen: screen, contentRect: rect)
-            panel.install(content: NotchPlaceholderView(screen: screen))
+            panel.install(content: NotchSurfaceView(expansion: expansion, module: module))
             panel.show()
             panels[screen.displayID] = panel
             Log.window.info("Installed panel for \(screen.localizedName, privacy: .public) (id: \(screen.displayID)) at \(String(describing: rect), privacy: .public)")
@@ -41,32 +51,29 @@ final class PanelManager {
         panels.removeAll()
     }
 
-    // Test hook
-    var managedDisplayIDs: Set<CGDirectDisplayID> { Set(panels.keys) }
-}
+    // MARK: - Private
 
-/// Placeholder content for Phase 1 — a rounded-bottom red shape that proves
-/// the panel is positioned correctly. Replaced by module content in Phase 2.
-private struct NotchPlaceholderView: View {
-    let screen: ScreenDescriptor
-
-    var body: some View {
-        ZStack {
-            UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: 12,
-                bottomTrailingRadius: 12,
-                topTrailingRadius: 0,
-                style: .continuous
-            )
-            .fill(Color.red.opacity(0.55))
-
-            if FeatureFlags.debugOverlay {
-                DebugOverlay(screen: screen)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-            }
+    private func currentRect(for screen: ScreenDescriptor) -> CGRect? {
+        switch expansion.phase {
+        case .collapsed:
+            return NotchGeometry.collapsedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch)
+        case .expanded:
+            return NotchGeometry.expandedPanelRect(for: screen, synthetic: FeatureFlags.syntheticNotch)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    private func animate(to phase: NotchExpansionController.Phase) {
+        for (id, panel) in panels {
+            guard let rect = currentRect(for: panel.screenDescriptor) else { continue }
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.22
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                ctx.allowsImplicitAnimation = true
+                panel.animator().setFrame(rect, display: true)
+            }
+            _ = id
+        }
+    }
+
+    var managedDisplayIDs: Set<CGDirectDisplayID> { Set(panels.keys) }
 }
