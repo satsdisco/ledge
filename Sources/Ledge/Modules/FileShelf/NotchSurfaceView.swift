@@ -49,8 +49,8 @@ struct NotchSurfaceView: View {
     private var shape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
             topLeadingRadius: 0,
-            bottomLeadingRadius: expansion.phase == .expanded ? 18 : 12,
-            bottomTrailingRadius: expansion.phase == .expanded ? 18 : 12,
+            bottomLeadingRadius: expansion.phase == .expanded ? 22 : 12,
+            bottomTrailingRadius: expansion.phase == .expanded ? 22 : 12,
             topTrailingRadius: 0,
             style: .continuous
         )
@@ -62,11 +62,10 @@ struct NotchSurfaceView: View {
     private var content: some View {
         switch expansion.phase {
         case .collapsed:
-            CombinedCollapsedStrip(modules: modules)
-                .padding(.horizontal, 6)
-                .padding(.bottom, 3)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .transition(.opacity)
+            // Flush with the notch — no visible glance content by default.
+            // Users who want an always-on strip will get a toggle later.
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .expanded:
             VStack(spacing: 0) {
                 if modules.count > 1 {

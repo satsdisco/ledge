@@ -68,7 +68,7 @@ enum NotchGeometry {
     static func collapsedPanelRect(
         for screen: ScreenDescriptor,
         synthetic: Bool,
-        tongue: CGFloat = 22
+        tongue: CGFloat = 0
     ) -> CGRect? {
         guard let notch = notchRect(for: screen, synthetic: synthetic) else { return nil }
         return CGRect(

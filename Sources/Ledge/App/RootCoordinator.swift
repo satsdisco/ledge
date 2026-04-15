@@ -10,14 +10,19 @@ final class RootCoordinator {
     private lazy var env = ModuleEnvironment(expansion: expansion)
     private lazy var fileShelf = FileShelfModule(environment: env)
     private lazy var nowPlaying = NowPlayingModule(environment: env)
+    private lazy var timer = TimerModule(environment: env)
     private lazy var active = ActiveModuleStore(
         defaultID: FileShelfModule.identifier,
-        availableIDs: [FileShelfModule.identifier, NowPlayingModule.identifier]
+        availableIDs: [
+            FileShelfModule.identifier,
+            NowPlayingModule.identifier,
+            TimerModule.identifier
+        ]
     )
     private lazy var panels = PanelManager(
         expansion: expansion,
         active: active,
-        modules: [fileShelf, nowPlaying]
+        modules: [fileShelf, nowPlaying, timer]
     )
     private lazy var displays = DisplayCoordinator { [weak self] screens in
         self?.panels.reconcile(with: screens)
@@ -27,6 +32,7 @@ final class RootCoordinator {
     func start() {
         registry.register(fileShelf)
         registry.register(nowPlaying)
+        registry.register(timer)
         registry.bootstrap()
         _ = shortcuts
         displays.start()
