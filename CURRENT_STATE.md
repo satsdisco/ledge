@@ -1,45 +1,35 @@
 # Ledge — Current State
 
-**Updated:** 2026-04-14
-**Phase:** Pre-Phase 0 (architecture approved, awaiting scaffold green-light)
+**Updated:** 2026-04-15
+**Phase:** Phase 0 complete. Ready for Phase 1 (notch panel foundation).
 
 ## What exists
-- `docs/PRODUCT_BRIEF.md`
-- `docs/FEATURE_INVENTORY.md`
-- `docs/MVP_RECOMMENDATION.md`
-- `docs/PRD.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DESIGN_SYSTEM.md`
-- `docs/IMPLEMENTATION_PLAN.md`
-- `docs/ADRs/0001..0007.md`
-- `TODO.md`, `CURRENT_STATE.md`
+- Planning docs (all in `docs/`).
+- SwiftPM executable target `Ledge`, macOS 14+.
+- Accessory app entry (`LedgeApp`, `AppDelegate`) — no Dock icon, Settings-only scene.
+- `RootCoordinator` wiring, `ModuleRegistry` (empty), `LedgeModule` protocol.
+- `FeatureFlags` (mediaRemote, syntheticNotch, debugOverlay) with UserDefaults overrides.
+- `Log` — `os.Logger` wrapper, subsystem `app.ledge`.
+- `Settings/SettingsScene.swift` — three-tab stub (General, Modules, Advanced).
+- `Resources/Info.plist` with `LSUIElement = true`.
+- `scripts/make-app.sh` — builds + ad-hoc signs `build/Ledge.app`.
+- Smoke tests in `Tests/LedgeTests/`.
+- Git initialized, tagged `v0.0.1-skeleton`.
 
-## What does not exist yet
-- Xcode project
-- Any source code
-- Signing config
-- CI
+## Verified
+- `swift build` green.
+- `./scripts/make-app.sh` produces a launchable `.app`.
+- `open build/Ledge.app` runs as accessory (no Dock icon), `⌘,` opens Settings.
 
 ## Locked decisions
 - Name: **Ledge**
 - MVP scope: pluggable host + File Shelf + Now Playing
-- Distribution: Developer ID notarized, direct download (not App Store)
 - Min OS: macOS 14 Sonoma
 - Stack: Swift + SwiftUI content + AppKit panel bridge
 - Persistence: per-module Codable JSON in Application Support
 - Risky APIs: protocol-abstracted, flag-gated, public fallback required
-
-## Signing posture
-**Ad-hoc signing for Phases 0–3.** No Apple Developer Team ID required during development.
-- Local builds use `codesign --sign -` (ad-hoc identity).
-- Bundle id reserved as `com.satsdisco.ledge` (placeholder; can be changed later without code impact).
-- Real Developer ID + notarization deferred to Phase 4 packaging.
-
-## Tooling
-- ✅ Swift toolchain present via Command Line Tools.
-- ❌ Full Xcode not installed. Required before Phase 0 if we go the `.xcodeproj` route. Alternative SwiftPM path possible for Phases 0–2; see below.
+- **Signing:** ad-hoc (`codesign --sign -`) for Phases 0–3; Developer ID + notarization deferred to Phase 4
+- **Tooling path:** SwiftPM for Phases 0–2; promote to `.xcodeproj` once full Xcode is installed (needed before Phase 3's KeyboardShortcuts + polish, certainly before Phase 4)
 
 ## Next step
-Awaiting one of:
-- **Path A:** install full Xcode → scaffold `Ledge.xcodeproj`.
-- **Path B:** start with `Package.swift` SwiftPM executable, install Xcode later before Phase 3.
+**Phase 1 — Notch panel foundation.** Implement `NotchPanel`, `PanelManager`, `DisplayCoordinator`, `NotchGeometry`, Debug overlay. Target: a placeholder panel at correct notch geometry on every connected display, surviving reconfig and sleep.
