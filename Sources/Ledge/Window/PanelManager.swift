@@ -3,16 +3,17 @@ import SwiftUI
 
 /// Owns one `NotchPanel` per eligible screen. Idempotent: safe to call
 /// `reconcile(with:)` repeatedly with the current screen list.
-/// Listens to the shared `NotchExpansionController` to animate panel frames
-/// between collapsed and expanded geometries.
+/// Listens to `NotchExpansionController` to animate panel frames.
 final class PanelManager {
     private var panels: [CGDirectDisplayID: NotchPanel] = [:]
     private let expansion: NotchExpansionController
-    private let module: FileShelfModule
+    private let active: ActiveModuleStore
+    private let modules: [LedgeModule]
 
-    init(expansion: NotchExpansionController, module: FileShelfModule) {
+    init(expansion: NotchExpansionController, active: ActiveModuleStore, modules: [LedgeModule]) {
         self.expansion = expansion
-        self.module = module
+        self.active = active
+        self.modules = modules
         expansion.onPhaseChange = { [weak self] phase in
             self?.animate(to: phase)
         }
@@ -39,7 +40,11 @@ final class PanelManager {
             }
 
             let panel = NotchPanel(screen: screen, contentRect: rect)
-            panel.install(content: NotchSurfaceView(expansion: expansion, module: module))
+            panel.install(content: NotchSurfaceView(
+                expansion: expansion,
+                active: active,
+                modules: modules
+            ))
             panel.show()
             panels[screen.displayID] = panel
             Log.window.info("Installed panel for \(screen.localizedName, privacy: .public) (id: \(screen.displayID)) at \(String(describing: rect), privacy: .public)")
@@ -63,7 +68,7 @@ final class PanelManager {
     }
 
     private func animate(to phase: NotchExpansionController.Phase) {
-        for (id, panel) in panels {
+        for panel in panels.values {
             guard let rect = currentRect(for: panel.screenDescriptor) else { continue }
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = 0.22
@@ -71,7 +76,6 @@ final class PanelManager {
                 ctx.allowsImplicitAnimation = true
                 panel.animator().setFrame(rect, display: true)
             }
-            _ = id
         }
     }
 

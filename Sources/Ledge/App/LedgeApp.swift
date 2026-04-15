@@ -6,7 +6,7 @@ struct LedgeApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsScene()
+            SettingsScene(loginItem: appDelegate.coordinator.loginItem)
         }
     }
 }
