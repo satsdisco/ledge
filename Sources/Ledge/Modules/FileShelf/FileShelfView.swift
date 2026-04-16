@@ -32,8 +32,7 @@ struct FileShelfExpandedView: View {
     @Bindable var store: FileShelfStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            header
+        ZStack(alignment: .topTrailing) {
             if store.items.isEmpty {
                 emptyState
             } else {
@@ -43,42 +42,43 @@ struct FileShelfExpandedView: View {
                             ShelfItemView(item: item, store: store)
                         }
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 14)
                 }
             }
-        }
-        .padding(.vertical, 10)
-    }
 
-    private var header: some View {
-        HStack {
-            Text("Shelf")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
-            Spacer()
             if store.items.contains(where: { !$0.isPinned }) {
                 Button {
                     store.clearUnpinned()
                 } label: {
                     Text("Clear")
                         .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(.white.opacity(0.08))
+                        )
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.white.opacity(0.55))
+                .padding(.trailing, 14)
+                .padding(.top, 4)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyState: some View {
-        HStack {
-            Spacer()
+        VStack(spacing: 6) {
+            Image(systemName: "tray")
+                .font(.system(size: 20))
+                .foregroundStyle(.white.opacity(0.25))
             Text("Drop files here")
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.35))
-            Spacer()
+                .foregroundStyle(.white.opacity(0.4))
         }
-        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
