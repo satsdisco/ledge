@@ -17,10 +17,6 @@
   <a href="https://github.com/satsdisco/ledge/releases/latest"><img src="https://img.shields.io/github/downloads/satsdisco/ledge/total?style=flat-square&color=000000" alt="Downloads"></a>
 </p>
 
-<p align="center">
-  <img src="assets/hero.png" width="720" alt="Ledge expanded with Now Playing">
-</p>
-
 ---
 
 ## What it does
