@@ -27,8 +27,14 @@ final class ClocksModule: LedgeModule {
         AnyView(ClocksExpandedView(store: store, ticker: ticker))
     }
 
-    /// Wider + taller than the default so analog faces have room to breathe.
-    var preferredExpandedSize: CGSize { CGSize(width: 520, height: 200) }
+    /// Grows vertically when the user has more than 4 clocks (which then
+    /// wrap to a second row of tiles). PanelManager re-asks for this on
+    /// active-module change and clock-list change (wired via store.onChange
+    /// → panels.relayoutIfNeeded in RootCoordinator).
+    var preferredExpandedSize: CGSize {
+        let twoRows = store.entries.count > 4
+        return CGSize(width: 520, height: twoRows ? 340 : 220)
+    }
 
     private func startTicking() {
         let t = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in

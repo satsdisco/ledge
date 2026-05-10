@@ -52,9 +52,13 @@ struct ClocksExpandedView: View {
     }
 
     private var tilesGrid: some View {
-        let count = max(1, min(store.entries.count, 4))
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
-        return LazyVGrid(columns: columns, spacing: 8) {
+        // ≤4 clocks: one row, one column per clock.
+        // 5–6 clocks: 3 columns × 2 rows (5 → 3+2, 6 → 3+3) — more balanced
+        // than 4+1 or 4+2.
+        let count = store.entries.count
+        let columnCount = count <= 4 ? max(1, count) : 3
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)
+        return LazyVGrid(columns: columns, spacing: 12) {
             ForEach(store.entries) { entry in
                 ClockTileView(entry: entry, now: ticker.now)
             }
@@ -80,20 +84,32 @@ private struct ClockTileView: View {
     let entry: ClockEntry
     let now: Date
 
+    private var isLocal: Bool {
+        entry.timeZone?.secondsFromGMT() == TimeZone.current.secondsFromGMT()
+    }
+
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             face
-                .frame(width: 64, height: 64)
-            VStack(spacing: 1) {
-                Text(entry.displayLabel)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .tracking(0.5)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                .frame(width: 72, height: 72)
+
+            VStack(spacing: 2) {
+                HStack(spacing: 4) {
+                    if isLocal {
+                        Circle()
+                            .fill(.green.opacity(0.85))
+                            .frame(width: 5, height: 5)
+                    }
+                    Text(entry.displayLabel)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .tracking(1.2)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
                 Text(metaLine)
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundStyle(.white.opacity(0.40))
                     .lineLimit(1)
             }
         }
@@ -103,15 +119,16 @@ private struct ClockTileView: View {
     @ViewBuilder
     private var face: some View {
         if entry.style == .analog, let tz = entry.timeZone {
-            AnalogClockView(date: now, timeZone: tz, diameter: 64)
+            AnalogClockView(date: now, timeZone: tz, diameter: 72)
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.white.opacity(0.18), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(.white.opacity(0.06))
                 Text(ClocksFormat.time(now, in: entry.timeZone))
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.97))
                     .monospacedDigit()
+                    .tracking(-0.5)
             }
         }
     }
@@ -121,9 +138,9 @@ private struct ClockTileView: View {
         let off = entry.offsetLabel()
         if entry.style == .analog {
             // Analog face shows time visually; show digital + date below.
-            return "\(ClocksFormat.time(now, in: entry.timeZone)) · \(off)"
+            return "\(ClocksFormat.time(now, in: entry.timeZone))  ·  \(off)"
         } else {
-            return "\(date) · \(off)"
+            return "\(date)  ·  \(off)"
         }
     }
 }

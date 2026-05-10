@@ -29,6 +29,8 @@ final class RootCoordinator {
 
     /// Exposed for Settings UI so it can edit the clocks list live.
     var clocksStore: ClocksStore { clocks.store }
+    /// Exposed for Settings UI so the user can tune hover sensitivity.
+    var notchExpansion: NotchExpansionController { expansion }
     let enabledStore = ModuleEnabledStore(allIDs: RootCoordinator.allModuleIDs)
     private lazy var active = ActiveModuleStore(
         defaultID: FileShelfModule.identifier,
@@ -63,6 +65,8 @@ final class RootCoordinator {
 
     func start() {
         _ = updater  // ensure Sparkle's background scheduler is alive
+        // Grow / shrink the panel when the user adds or removes a clock.
+        clocks.store.onCountChange = { [weak self] in self?.panels.relayoutIfNeeded() }
         registry.register(fileShelf)
         registry.register(nowPlaying)
         registry.register(timer)

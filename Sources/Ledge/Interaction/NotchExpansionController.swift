@@ -18,18 +18,36 @@ final class NotchExpansionController {
     /// the actual NSPanel frame animation.
     var onPhaseChange: ((Phase) -> Void)?
 
-    private let enterDelay: TimeInterval
+    /// Seconds to wait after the cursor enters the notch before expanding.
+    /// User-tunable in Settings → General → Activation. Persists in
+    /// UserDefaults under `ledge.hover.enterDelay`.
+    var enterDelay: TimeInterval {
+        didSet {
+            UserDefaults.standard.set(enterDelay, forKey: Self.enterDelayKey)
+        }
+    }
+
     private let exitDelay: TimeInterval
     private let minExpandedHold: TimeInterval
     private var pending: DispatchWorkItem?
     private var expandedAt: Date?
 
+    private static let enterDelayKey = "ledge.hover.enterDelay"
+    static let defaultEnterDelay: TimeInterval = 0.12
+
     init(
-        enterDelay: TimeInterval = 0.12,
+        enterDelay: TimeInterval? = nil,
         exitDelay: TimeInterval = 0.35,
         minExpandedHold: TimeInterval = 0.40
     ) {
-        self.enterDelay = enterDelay
+        // Prefer caller-supplied value (tests), then user preference, then default.
+        if let provided = enterDelay {
+            self.enterDelay = provided
+        } else if let saved = UserDefaults.standard.object(forKey: Self.enterDelayKey) as? Double {
+            self.enterDelay = saved
+        } else {
+            self.enterDelay = Self.defaultEnterDelay
+        }
         self.exitDelay = exitDelay
         self.minExpandedHold = minExpandedHold
     }

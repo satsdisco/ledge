@@ -5,13 +5,14 @@ import KeyboardShortcuts
 struct SettingsScene: View {
     let loginItem: LoginItemService
     let updater: UpdaterService
+    let expansion: NotchExpansionController
     let clocksStore: ClocksStore
     let enabledStore: ModuleEnabledStore
     let modulesCatalog: [(id: String, name: String, icon: String)]
 
     var body: some View {
         TabView {
-            GeneralPane(loginItem: loginItem, updater: updater)
+            GeneralPane(loginItem: loginItem, updater: updater, expansion: expansion)
                 .tabItem { Label("General", systemImage: "gear") }
             ModulesPane(enabled: enabledStore, catalog: modulesCatalog)
                 .tabItem { Label("Modules", systemImage: "square.grid.2x2") }
@@ -33,6 +34,7 @@ struct SettingsScene: View {
 private struct GeneralPane: View {
     @Bindable var loginItem: LoginItemService
     @Bindable var updater: UpdaterService
+    @Bindable var expansion: NotchExpansionController
 
     var body: some View {
         Form {
@@ -47,9 +49,23 @@ private struct GeneralPane: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Activation") {
+            Section {
                 LabeledContent("Toggle expand", value: "⌃⌥Space")
                 LabeledContent("Right-click", value: "Module switcher · Settings · Quit")
+                    .foregroundStyle(.secondary)
+
+                Picker("Hover sensitivity", selection: $expansion.enterDelay) {
+                    Text("Instant").tag(0.0)
+                    Text("Default").tag(0.12)
+                    Text("Relaxed").tag(0.40)
+                    Text("Patient").tag(0.80)
+                }
+                .pickerStyle(.segmented)
+            } header: {
+                Text("Activation")
+            } footer: {
+                Text("How long the cursor must rest on the notch before the panel expands. Default opens almost immediately; Relaxed and Patient prevent accidental expansions when reaching for the menu bar.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -229,13 +245,11 @@ private struct ClocksPane: View {
                 .foregroundStyle(.secondary)
                 .tracking(0.3)
             HStack(spacing: 8) {
-                Picker("", selection: $pickerZoneID) {
-                    ForEach(Self.popularZones, id: \.self) { id in
-                        Text(ClockEntry.derivedLabel(for: id).capitalized).tag(id)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 180)
+                TimeZonePickerButton(
+                    selection: $pickerZoneID,
+                    popularZones: Self.popularZones
+                )
+                .frame(width: 200)
 
                 TextField("Label (optional)", text: $pickerLabel)
                     .textFieldStyle(.roundedBorder)
@@ -263,6 +277,187 @@ private struct ClocksPane: View {
             }
         }
     }
+}
+
+// MARK: - Time zone picker
+
+/// Button-style timezone picker. Tapping opens a popover with a search
+/// field and the full list of `TimeZone.knownTimeZoneIdentifiers` (~600
+/// zones), plus a "Popular" section at the top for the common ones.
+private struct TimeZonePickerButton: View {
+    @Binding var selection: String
+    let popularZones: [String]
+    @State private var open = false
+
+    var body: some View {
+        Button {
+            open = true
+        } label: {
+            HStack(spacing: 6) {
+                Text(displayCity)
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 4)
+                Text(offsetString(for: selection))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $open, arrowEdge: .bottom) {
+            TimeZonePickerPopover(
+                selection: $selection,
+                isPresented: $open,
+                popularZones: popularZones
+            )
+        }
+    }
+
+    private var displayCity: String {
+        let tail = selection.split(separator: "/").last.map(String.init) ?? selection
+        return tail.replacingOccurrences(of: "_", with: " ")
+    }
+}
+
+private struct TimeZonePickerPopover: View {
+    @Binding var selection: String
+    @Binding var isPresented: Bool
+    let popularZones: [String]
+    @State private var query = ""
+    @FocusState private var searchFocused: Bool
+
+    private var allZones: [String] { TimeZone.knownTimeZoneIdentifiers.sorted() }
+
+    private var filteredAll: [String] {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return allZones }
+        return allZones.filter { $0.lowercased().replacingOccurrences(of: "_", with: " ").contains(q) }
+    }
+
+    private var filteredPopular: [String] {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return popularZones }
+        return popularZones.filter { $0.lowercased().replacingOccurrences(of: "_", with: " ").contains(q) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                TextField("Search any city or region", text: $query)
+                    .textFieldStyle(.plain)
+                    .focused($searchFocused)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(10)
+
+            Divider()
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    if !filteredPopular.isEmpty {
+                        Section {
+                            ForEach(filteredPopular, id: \.self) { tz in
+                                row(tz)
+                            }
+                        } header: {
+                            sectionHeader("Popular")
+                        }
+                    }
+                    Section {
+                        ForEach(filteredAll, id: \.self) { tz in
+                            row(tz)
+                        }
+                    } header: {
+                        sectionHeader(filteredAll.count == allZones.count ? "All zones" : "\(filteredAll.count) match\(filteredAll.count == 1 ? "" : "es")")
+                    }
+                }
+            }
+        }
+        .frame(width: 360, height: 420)
+        .onAppear { searchFocused = true }
+    }
+
+    private func row(_ tz: String) -> some View {
+        let isSelected = selection == tz
+        return Button {
+            selection = tz
+            isPresented = false
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(displayCityName(tz))
+                        .foregroundStyle(.primary)
+                    Text(tz.replacingOccurrences(of: "_", with: " "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(offsetString(for: tz))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tint)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(isSelected ? Color.accentColor.opacity(0.12) : .clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 9, weight: .semibold))
+            .tracking(0.6)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private func displayCityName(_ tz: String) -> String {
+        let tail = tz.split(separator: "/").last.map(String.init) ?? tz
+        return tail.replacingOccurrences(of: "_", with: " ")
+    }
+}
+
+private func offsetString(for tzID: String) -> String {
+    guard let tz = TimeZone(identifier: tzID) else { return "" }
+    let offset = tz.secondsFromGMT()
+    let hours = offset / 3600
+    let mins = abs(offset % 3600) / 60
+    let sign = hours >= 0 ? "+" : ""
+    if mins == 0 { return "GMT\(sign)\(hours)" }
+    return String(format: "GMT%@%d:%02d", sign, hours, mins)
 }
 
 // MARK: - Shortcuts

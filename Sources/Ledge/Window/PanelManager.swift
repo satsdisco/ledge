@@ -118,6 +118,15 @@ final class PanelManager {
 
     var managedDisplayIDs: Set<CGDirectDisplayID> { Set(panels.keys) }
 
+    /// Public hook so a module's store (e.g. ClocksStore) can ask the panel
+    /// to re-evaluate its preferredExpandedSize after the module's content
+    /// changes shape — adding/removing clocks crosses the row-count
+    /// threshold, for instance.
+    func relayoutIfNeeded() {
+        guard expansion.phase == .expanded else { return }
+        animate(to: .expanded)
+    }
+
     private func activeModule() -> LedgeModule? {
         modules.first { type(of: $0).identifier == active.activeID }
     }
