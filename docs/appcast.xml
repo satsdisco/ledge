@@ -7,6 +7,29 @@
         <language>en</language>
 
         <item>
+            <title>1.0.2</title>
+            <pubDate>Sun, 10 May 2026 17:19:55 +0000</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>Polish for the Clocks module + a hover sensitivity control.</h3>
+                <h4>Clocks</h4>
+                <ul>
+                    <li>5+ clocks now wrap cleanly as 3+2 / 3+3 instead of clipping behind the panel; the panel grows to fit.</li>
+                    <li>Refined tile look — bigger 72&times;72 faces, filled card backgrounds, larger time digits, tracked uppercase city labels.</li>
+                    <li>A small green dot marks your local timezone so you can spot &ldquo;this is you&rdquo; at a glance.</li>
+                    <li>New searchable city picker in Settings &rarr; Clocks: every timezone macOS knows about (~600 cities), with a Popular section at the top. Each row shows city, IANA path, and GMT offset.</li>
+                </ul>
+                <h4>Hover sensitivity</h4>
+                <p>Settings &rarr; General &rarr; Activation gets a 4-preset picker: Instant &middot; Default &middot; Relaxed &middot; Patient. If you keep accidentally triggering Ledge while reaching for the menu bar, dial it up.</p>
+            ]]></description>
+            <enclosure url="https://github.com/satsdisco/ledge/releases/download/v1.0.2/Ledge-1.0.2.dmg"
+                       sparkle:version="11"
+                       sparkle:shortVersionString="1.0.2"
+                       sparkle:edSignature="qFZuWVZnPCSh4E/wybacwu6HkWftazt+Z4IvNqT4azxMqfjY/+u4mxtkd4Uru6T/yN+egxn1eRdkKANGGX9aAg==" length="3223202"
+                       type="application/octet-stream" />
+        </item>
+
+        <item>
             <title>1.0.1</title>
             <pubDate>Sun, 10 May 2026 22:15:00 +0000</pubDate>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
