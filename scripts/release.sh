@@ -90,11 +90,14 @@ if [[ -d "$SPARKLE_SRC" ]]; then
     cp -R "$SPARKLE_SRC" "${APP_DIR}/Contents/Frameworks/Sparkle.framework"
     SPARKLE_DEST="${APP_DIR}/Contents/Frameworks/Sparkle.framework"
 
+    # Sign innermost helpers first, framework last. Sparkle 2.9 layout puts
+    # Updater.app and Autoupdate at Versions/Current directly (not under
+    # Resources/) — older guides are stale here.
     for nested in \
+        "${SPARKLE_DEST}/Versions/Current/Autoupdate" \
+        "${SPARKLE_DEST}/Versions/Current/Updater.app" \
         "${SPARKLE_DEST}/Versions/Current/XPCServices/Installer.xpc" \
-        "${SPARKLE_DEST}/Versions/Current/XPCServices/Downloader.xpc" \
-        "${SPARKLE_DEST}/Versions/Current/Resources/Updater.app" \
-        "${SPARKLE_DEST}/Versions/Current/Resources/Autoupdate"
+        "${SPARKLE_DEST}/Versions/Current/XPCServices/Downloader.xpc"
     do
         if [[ -e "$nested" ]]; then
             codesign --force --sign "${SIGN_IDENTITY}" \
