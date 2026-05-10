@@ -178,9 +178,9 @@ if [[ -n "$SIGN_UPDATE" ]]; then
             <pubDate>${PUB_DATE}</pubDate>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-                <h3>What's new in ${VERSION}</h3>
+                <h3>Changes in ${VERSION}</h3>
                 <ul>
-                    <li>Replace this with the release notes for ${VERSION}.</li>
+                    <li>Replace with release notes before publishing.</li>
                 </ul>
             ]]></description>
             <enclosure url="${DOWNLOAD_URL}"

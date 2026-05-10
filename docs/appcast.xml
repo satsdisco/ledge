@@ -6,11 +6,36 @@
         <description>Most recent updates to Ledge</description>
         <language>en</language>
 
-        <!--
-            Each release appends one <item> below. The release script
-            (scripts/release.sh) runs sign_update on the DMG and emits a new
-            <item> block with sparkle:edSignature, length, and the GitHub
-            Releases download URL. See docs/SPARKLE_SETUP.md for the full flow.
-        -->
+        <item>
+            <title>1.0.0</title>
+            <pubDate>Sun, 10 May 2026 21:00:00 +0000</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>The big 1.0 — three new modules, on-device OCR, and signed auto-updates.</h3>
+
+                <h4>New modules</h4>
+                <ul>
+                    <li><strong>Clipboard</strong> — manual stash for text, images, and files. Press &#x2303;&#x2325;V or drag onto the notch. Rich text preserved. On-device OCR via Vision makes screenshot text searchable. Pin entries, edit them as snippets, full keyboard nav, Quick Look any row with space. Concealed-clipboard hints from password managers are honored.</li>
+                    <li><strong>Notes</strong> — daily notepad with auto-rollover. Today is editable; at midnight it slides into a scrollable archive that renders markdown.</li>
+                    <li><strong>Stopwatch</strong> — new mode in the Timer module, drift-free pause and resume.</li>
+                </ul>
+
+                <h4>Auto-updates</h4>
+                <p>From this release on, Ledge updates itself with a clean prompt — no more manual DMG re-downloads. Updates are signed with an EdDSA key; the app refuses anything unsigned. The only network call for updates is the appcast at <code>satsdisco.github.io/ledge</code>.</p>
+
+                <h4>Polish</h4>
+                <ul>
+                    <li>Timer / stopwatch layout balanced vertically in the panel</li>
+                    <li>File Shelf expanded view layout matches other modules</li>
+                    <li>Settings &rarr; Shortcuts now lists every Clipboard-panel keystroke plus tips</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/satsdisco/ledge/releases/download/v1.0.0/Ledge-1.0.0.dmg"
+                       sparkle:version="9"
+                       sparkle:shortVersionString="1.0.0"
+                       sparkle:edSignature="IRlNcYhjIdAGH7zrhEHhe3/6zpUaIZV/4wB44TZcFO8GkP9XDydkUdDyuh7vHndiDIRiYi0eTJMW4h+XxQ9LAQ==" length="3175769"
+                       type="application/octet-stream" />
+        </item>
+
     </channel>
 </rss>
