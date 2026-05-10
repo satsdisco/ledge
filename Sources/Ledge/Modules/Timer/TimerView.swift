@@ -92,11 +92,11 @@ struct TimerExpandedView: View {
             modeToggle
             if state.mode == .timer {
                 presetsRow
-            } else {
-                stopwatchHeader
             }
+            Spacer(minLength: 0)
             timeDisplay
             actionsRow
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -158,24 +158,6 @@ struct TimerExpandedView: View {
                 }
                 .buttonStyle(.plain)
             }
-        }
-    }
-
-    // MARK: Stopwatch header
-
-    private var stopwatchHeader: some View {
-        Text(stopwatchSubtitle)
-            .font(.system(size: 10))
-            .foregroundStyle(.white.opacity(0.4))
-            .frame(maxWidth: .infinity)
-            .frame(height: 22)
-    }
-
-    private var stopwatchSubtitle: String {
-        switch state.phase {
-        case .running: return "running"
-        case .paused:  return "paused"
-        case .idle, .finished: return "ready"
         }
     }
 
