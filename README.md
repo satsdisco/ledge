@@ -7,7 +7,7 @@
 <p align="center">
   A native macOS utility that turns the notch into a calm, useful surface.
   <br>
-  <strong>File Shelf &middot; Now Playing &middot; Timer &middot; World Clocks &middot; Bitcoin</strong>
+  <strong>File Shelf &middot; Now Playing &middot; Timer &middot; Stopwatch &middot; World Clocks &middot; Bitcoin &middot; Clipboard &middot; Notes</strong>
 </p>
 
 <p align="center">
@@ -29,9 +29,11 @@ Ledge lives invisibly inside your MacBook notch. Hover or press **⌃⌥Space** 
 |--------|-------------|
 | **File Shelf** | Drag files onto the notch to park them temporarily. Drag out to any app, copy path, reveal in Finder, pin items across relaunches. |
 | **Now Playing** | Album art, track title, artist, and transport controls for Apple Music and Spotify. |
-| **Timer** | Focus presets (5 / 10 / 25 / 60 min), start / pause / reset, sounds on completion. |
+| **Timer / Stopwatch** | Focus presets (5 / 10 / 25 / 60 min) with start / pause / reset and a completion sound, plus a count-up stopwatch with drift-free pause and resume. |
 | **World Clocks** | Up to 6 configurable timezones with analog or digital faces, live-updating. |
 | **Bitcoin** | Live BTC/USD from CoinGecko — price, 24h change, and a sparkline chart. |
+| **Clipboard** | Manual stash for text, images, and files. Press **⌃⌥V**, click Capture, or drag onto the notch. Rich text + HTML preserved, on-device OCR on stashed images (text becomes searchable), pinning, snippet editing, full keyboard nav (↑↓ ⏎ ⌫ ⌘F ⌘1–9 space). Concealed-clipboard hints from password managers are honored — secrets get skipped. |
+| **Notes** | Daily notepad with auto-rollover. Today's note is always editable and autosaves; at midnight it slides into a scrollable archive that renders markdown (headers, lists, **bold**, `code`, links). |
 
 Each module can be enabled or disabled independently in Settings.
 
@@ -53,12 +55,13 @@ Ledge is Developer ID signed and Apple notarized — no Gatekeeper warnings.
 | Expand | Hover the notch, or press **⌃⌥Space** |
 | Collapse | Move the cursor away, or press **⌃⌥Space** again |
 | Switch modules | Click the tabs in the expanded header |
+| Stash to clipboard | Drag onto the notch, or press **⌃⌥V** to capture the system clipboard |
 | Drop files | Drag any file onto the notch |
 | Quick actions | Right-click the notch area |
 | Open Settings | Right-click → Settings, or expand + ⌘, |
 | Quit | Right-click → Quit Ledge |
 
-The keyboard shortcut is customizable in Settings → Shortcuts.
+Both global shortcuts are rebindable in Settings → Shortcuts. The full Clipboard keyboard cheat sheet lives there too.
 
 ## Build from source
 
@@ -88,8 +91,8 @@ App/                 Entry point, AppDelegate, RootCoordinator
 Window/              NSPanel, geometry, display coordination
 Interaction/         Hover engine, expansion controller, keyboard shortcuts
 ModuleHost/          Module protocol, registry, persistence, enable/disable
-Modules/             FileShelf, NowPlaying, Timer, Clocks, Bitcoin
-Services/            Logging, feature flags, login item
+Modules/             FileShelf, NowPlaying, Timer, Clocks, Bitcoin, Clipboard, Notes
+Services/            Logging, feature flags, login item, Sparkle updater
 DesignSystem/        Motion tokens, palette, typography
 Settings/            SwiftUI settings panes
 ```
@@ -101,7 +104,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design, and [`do
 Ledge is local-first. The only network calls are:
 
 - **CoinGecko API** — public price data for the Bitcoin module (no auth, no tracking).
-- **Sparkle** — (planned) checks for app updates.
+- **Sparkle** — checks `https://satsdisco.github.io/ledge/appcast.xml` once a day for new versions. Updates are signed with an EdDSA key and only installed if the signature matches.
+
+Clipboard images run through the on-device **Vision** framework for OCR. Nothing leaves your Mac.
 
 No telemetry, no analytics, no accounts, no cloud sync. Your data stays on your Mac in `~/Library/Application Support/Ledge/`.
 
