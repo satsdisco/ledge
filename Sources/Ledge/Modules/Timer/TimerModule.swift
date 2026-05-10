@@ -44,9 +44,10 @@ final class TimerModule: LedgeModule {
         ))
     }
 
-    /// Stopwatch needs the same vertical room as the timer (presets row swaps
-    /// with a single mode-row of the same height).
-    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 180) }
+    /// Bumped from 180 to accommodate the mode toggle row added on top of
+    /// the original (presets + countdown + actions) layout. Without the
+    /// extra height, content overflows into the notch tongue at the top.
+    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 220) }
 
     // MARK: - Mode
 
