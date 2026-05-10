@@ -17,6 +17,12 @@
   <a href="https://github.com/satsdisco/ledge/releases/latest"><img src="https://img.shields.io/github/downloads/satsdisco/ledge/total?style=flat-square&color=000000" alt="Downloads"></a>
 </p>
 
+<p align="center">
+  <a href="https://satsdisco.github.io/ledge/"><strong>satsdisco.github.io/ledge</strong></a> &middot;
+  <a href="https://github.com/satsdisco/ledge/releases/latest">Download</a> &middot;
+  <a href="https://github.com/satsdisco/ledge/releases">Changelog</a>
+</p>
+
 ---
 
 ## What it does
@@ -124,4 +130,4 @@ All rights reserved. Free to download and use.
 
 Built by [@satsdisco](https://github.com/satsdisco).
 
-Uses [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) by Sindre Sorhus.
+Uses [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) by Sindre Sorhus and [Sparkle](https://sparkle-project.org) by Andy Matuschak / the Sparkle Project.

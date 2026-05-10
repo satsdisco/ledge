@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledge — A calm, useful surface inside your MacBook notch</title>
+    <meta name="description" content="A native macOS utility that turns the notch into a calm, useful surface. File Shelf · Now Playing · Timer · Stopwatch · World Clocks · Bitcoin · Clipboard · Notes.">
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:title" content="Ledge">
+    <meta property="og:description" content="A calm, useful surface inside your MacBook notch.">
+    <meta property="og:image" content="https://satsdisco.github.io/ledge/icon.png">
+    <meta property="og:url" content="https://satsdisco.github.io/ledge/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #050505;
+            --surface: #0c0c0c;
+            --surface-2: #131313;
+            --line: rgba(255, 255, 255, 0.08);
+            --text: rgba(255, 255, 255, 0.95);
+            --text-2: rgba(255, 255, 255, 0.65);
+            --text-3: rgba(255, 255, 255, 0.40);
+            --accent: #ffffff;
+            --radius: 14px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a { color: inherit; text-decoration: none; }
+        a:hover { color: var(--text); }
+
+        code, .mono {
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.92em;
+        }
+
+        /* Layout */
+        .wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 28px;
+        }
+
+        /* Top bar */
+        .topbar {
+            padding: 22px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .topbar .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .topbar .brand img {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+        }
+        .topbar nav {
+            display: flex;
+            gap: 26px;
+            font-size: 13px;
+            color: var(--text-2);
+        }
+        .topbar nav a:hover { color: var(--text); }
+
+        /* Hero */
+        .hero {
+            padding: 110px 0 90px;
+            text-align: center;
+            border-bottom: 1px solid var(--line);
+        }
+        .hero .icon {
+            width: 144px;
+            height: 144px;
+            margin: 0 auto 36px;
+            border-radius: 32px;
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.04),
+                0 30px 80px -20px rgba(255, 255, 255, 0.08),
+                0 0 120px -10px rgba(255, 255, 255, 0.05);
+        }
+        .hero h1 {
+            font-size: 64px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            margin-bottom: 18px;
+            line-height: 1.05;
+        }
+        .hero .tagline {
+            font-size: 19px;
+            color: var(--text-2);
+            max-width: 540px;
+            margin: 0 auto 36px;
+            letter-spacing: -0.005em;
+        }
+        .hero .ctas {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--line);
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-primary {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--bg);
+        }
+        .btn-secondary {
+            color: var(--text);
+            background: transparent;
+        }
+        .btn-secondary:hover {
+            background: var(--surface);
+            color: var(--text);
+        }
+        .meta {
+            margin-top: 24px;
+            color: var(--text-3);
+            font-size: 12px;
+        }
+
+        /* Section */
+        section.block {
+            padding: 90px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .eyebrow {
+            color: var(--text-3);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        h2 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+            line-height: 1.15;
+        }
+        .lede {
+            font-size: 16px;
+            color: var(--text-2);
+            max-width: 620px;
+        }
+
+        /* Modules grid */
+        .modules-grid {
+            margin-top: 48px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        @media (min-width: 720px) {
+            .modules-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .module {
+            padding: 22px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .module:hover {
+            background: var(--surface-2);
+            border-color: rgba(255, 255, 255, 0.14);
+        }
+        .module .icon-bg {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .module svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text);
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .module h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: -0.005em;
+        }
+        .module p {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.5;
+        }
+
+        /* Pillars */
+        .pillars {
+            margin-top: 48px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 28px;
+        }
+        @media (min-width: 720px) {
+            .pillars { grid-template-columns: repeat(3, 1fr); }
+        }
+        .pillar h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .pillar p {
+            font-size: 14px;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+        .pillar .pill-mark {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            color: var(--text-3);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* Install */
+        .install-card {
+            margin-top: 36px;
+            padding: 28px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+        .install-card ol {
+            list-style: none;
+            counter-reset: step;
+            margin-top: 6px;
+        }
+        .install-card li {
+            counter-increment: step;
+            padding: 10px 0;
+            font-size: 14px;
+            color: var(--text-2);
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+        }
+        .install-card li::before {
+            content: counter(step);
+            font-family: "SF Mono", Menlo, monospace;
+            font-size: 11px;
+            color: var(--text-3);
+            min-width: 18px;
+        }
+        .install-card .req {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px 0 60px;
+            color: var(--text-3);
+            font-size: 12px;
+            text-align: center;
+            margin-top: auto;
+        }
+        footer a:hover { color: var(--text); }
+        footer .links {
+            display: flex;
+            gap: 22px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .hero { padding: 60px 0 60px; }
+            .hero h1 { font-size: 44px; }
+            .hero .icon { width: 110px; height: 110px; }
+            section.block { padding: 60px 0; }
+            h2 { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="wrap">
+        <a href="#" class="brand">
+            <img src="icon.png" alt="">
+            Ledge
+        </a>
+        <nav>
+            <a href="#modules">Modules</a>
+            <a href="#install">Install</a>
+            <a href="https://github.com/satsdisco/ledge">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="wrap">
+        <img class="icon" src="icon.png" alt="Ledge app icon">
+        <h1>Ledge</h1>
+        <p class="tagline">A calm, useful surface inside your MacBook notch. Eight modules that fade in when you need them and disappear when you don't.</p>
+        <div class="ctas">
+            <a class="btn btn-primary" href="https://github.com/satsdisco/ledge/releases/latest/download/Ledge-1.0.1.dmg">
+                Download for macOS
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+            <a class="btn btn-secondary" href="https://github.com/satsdisco/ledge">View on GitHub</a>
+        </div>
+        <div class="meta">v1.0.1 · macOS 14 Sonoma+ · Universal · Developer ID signed &amp; notarized · 3.0 MB</div>
+    </div>
+</section>
+
+<section class="block" id="modules">
+    <div class="wrap">
+        <div class="eyebrow">Modules</div>
+        <h2>Eight tools, one notch.</h2>
+        <p class="lede">Each module is self-contained and can be enabled or disabled independently. Switch between them with a click, a hotkey, or a hover.</p>
+
+        <div class="modules-grid">
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg>
+                </div>
+                <h3>File Shelf</h3>
+                <p>Drag files onto the notch to park them. Drag back out to any app, copy path, reveal, pin.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 9v6l5-3z" fill="currentColor" stroke="none"/></svg>
+                </div>
+                <h3>Now Playing</h3>
+                <p>Album art, title, artist, and transport controls for Apple Music and Spotify.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 3h6"/><path d="M12 1v2"/></svg>
+                </div>
+                <h3>Timer &amp; Stopwatch</h3>
+                <p>Focus presets (5 / 10 / 25 / 60 min) plus a count-up stopwatch with drift-free pause and resume.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg>
+                </div>
+                <h3>World Clocks</h3>
+                <p>Up to 6 configurable timezones, analog or digital faces, live-updating.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 8h5a2 2 0 0 1 0 4H9zM9 12h6a2 2 0 0 1 0 4H9zM10 6v2M10 16v2M13 6v2M13 16v2"/></svg>
+                </div>
+                <h3>Bitcoin</h3>
+                <p>Live BTC/USD from CoinGecko — price, 24h change, sparkline. No tracking.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h4"/></svg>
+                </div>
+                <h3>Clipboard</h3>
+                <p>Manual stash for text, images, and files. On-device OCR makes screenshot text searchable. Concealed-clipboard hints from password managers are honored — secrets get skipped.</p>
+            </article>
+
+            <article class="module">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/></svg>
+                </div>
+                <h3>Notes</h3>
+                <p>Daily notepad with auto-rollover. Today is editable; at midnight it slides into a scrollable archive that renders markdown.</p>
+            </article>
+
+        </div>
+    </div>
+</section>
+
+<section class="block">
+    <div class="wrap">
+        <div class="eyebrow">Why</div>
+        <h2>Native, local-first, auto-updating.</h2>
+
+        <div class="pillars">
+
+            <div class="pillar">
+                <div class="pill-mark">Native</div>
+                <h3>Built for your Mac.</h3>
+                <p>Swift + SwiftUI for content, AppKit (NSPanel) for the floating window layer. No Electron, no web stack, no menu bar clutter, no Dock icon. Universal binary, ad‑hoc and Developer ID signed releases.</p>
+            </div>
+
+            <div class="pillar">
+                <div class="pill-mark">Private</div>
+                <h3>Stays on your Mac.</h3>
+                <p>No telemetry, no analytics, no accounts, no cloud sync. The only network calls are CoinGecko for the Bitcoin price and a daily check of the appcast for updates. OCR runs through Apple's on-device Vision framework.</p>
+            </div>
+
+            <div class="pillar">
+                <div class="pill-mark">Maintained</div>
+                <h3>Auto-updates over Sparkle.</h3>
+                <p>Updates install themselves with a clean prompt — no more manual DMG re-downloads. Each release is signed with an EdDSA key; the app refuses to install anything unsigned.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="block" id="install">
+    <div class="wrap">
+        <div class="eyebrow">Install</div>
+        <h2>Two minutes from download to in-the-notch.</h2>
+        <p class="lede">Direct download — no App Store, no account, no install wizard.</p>
+
+        <div class="install-card">
+            <ol>
+                <li>Click <a href="https://github.com/satsdisco/ledge/releases/latest" style="color: var(--text); text-decoration: underline; text-decoration-color: var(--text-3);">Download for macOS</a> and open the DMG.</li>
+                <li>Drag <strong>Ledge</strong> into the <strong>Applications</strong> folder.</li>
+                <li>Launch Ledge from Applications. Grant Automation permission when prompted (Now Playing needs it).</li>
+                <li>Hover the notch, or press <code>⌃⌥Space</code>, to expand. Right‑click for module switcher and Settings.</li>
+            </ol>
+            <div class="req">
+                <strong>Requires:</strong> macOS 14 Sonoma or later. Universal binary — Apple silicon and Intel. Works on Macs without a notch via the synthetic-notch option in <code>Settings → Advanced</code>.
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="wrap">
+        <div class="links">
+            <a href="https://github.com/satsdisco/ledge">GitHub</a>
+            <a href="https://github.com/satsdisco/ledge/releases">Releases</a>
+            <a href="https://github.com/satsdisco/ledge/blob/main/README.md">README</a>
+            <a href="https://github.com/satsdisco/ledge/issues">Issues</a>
+        </div>
+        <div>Built by <a href="https://github.com/satsdisco" style="color: var(--text-2);">@satsdisco</a> · All rights reserved · Free to download and use</div>
+    </div>
+</footer>
+
+</body>
+</html>
