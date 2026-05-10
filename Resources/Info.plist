@@ -28,5 +28,20 @@
     <string>© 2026 satsdisco</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Ledge uses Apple Events to read and control media playback as a fallback when the system media APIs are unavailable.</string>
+
+    <!--
+        Sparkle auto-update configuration. Until populated, Sparkle will be
+        inert (Check Now will fail with a clean error). See docs/SPARKLE_SETUP.md
+        for the one-time setup: generating an EdDSA keypair, hosting an appcast,
+        and signing each release.
+    -->
+    <key>SUFeedURL</key>
+    <string>https://satsdisco.github.io/ledge/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>ruwFvL/G1+mhGbtuQmg5AWHiC8gu4XTpE9Gvl27nn0g=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
 </dict>
 </plist>

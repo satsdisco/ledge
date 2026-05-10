@@ -4,6 +4,7 @@ import Foundation
 /// store, login item, panel manager, and display coordinator.
 final class RootCoordinator {
     let loginItem = LoginItemService()
+    let updater = UpdaterService()
 
     private let registry = ModuleRegistry()
     private let expansion = NotchExpansionController()
@@ -61,6 +62,7 @@ final class RootCoordinator {
     )
 
     func start() {
+        _ = updater  // ensure Sparkle's background scheduler is alive
         registry.register(fileShelf)
         registry.register(nowPlaying)
         registry.register(timer)

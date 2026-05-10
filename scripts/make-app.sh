@@ -33,6 +33,40 @@ for bundle in "$BIN_PATH"/*.bundle; do
 done
 shopt -u nullglob
 
+# Embed Sparkle.framework for auto-updates. SwiftPM extracts it into the build
+# artifacts dir; we copy it into Contents/Frameworks and sign each piece in
+# the order Sparkle requires (XPC services & helpers signed before the
+# umbrella framework, framework before the host app).
+SPARKLE_SRC="$BIN_PATH/Sparkle.framework"
+if [[ -d "$SPARKLE_SRC" ]]; then
+    mkdir -p "$CONTENTS/Frameworks"
+    rm -rf "$CONTENTS/Frameworks/Sparkle.framework"
+    cp -R "$SPARKLE_SRC" "$CONTENTS/Frameworks/Sparkle.framework"
+    SPARKLE_DEST="$CONTENTS/Frameworks/Sparkle.framework"
+    SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+
+    # Sign nested helpers first.
+    UPDATER_APP="$SPARKLE_DEST/Versions/Current/Resources/Updater.app"
+    AUTOUPDATE="$SPARKLE_DEST/Versions/Current/Resources/Autoupdate"
+    INSTALLER_LAUNCHER="$SPARKLE_DEST/Versions/Current/XPCServices/Installer.xpc"
+    DOWNLOADER="$SPARKLE_DEST/Versions/Current/XPCServices/Downloader.xpc"
+
+    for nested in "$INSTALLER_LAUNCHER" "$DOWNLOADER" "$UPDATER_APP" "$AUTOUPDATE"; do
+        if [[ -e "$nested" ]]; then
+            codesign --force --sign "$SIGN_IDENTITY" \
+                --options runtime \
+                --timestamp=none \
+                "$nested" 2>/dev/null || true
+        fi
+    done
+
+    # Sign the framework itself last.
+    codesign --force --sign "$SIGN_IDENTITY" \
+        --options runtime \
+        --timestamp=none \
+        "$SPARKLE_DEST"
+fi
+
 # Sign with Hardened Runtime + entitlements (ad-hoc identity for personal builds).
 # Once you set up Developer ID, swap `-` for `Developer ID Application: NAME (TEAMID)`.
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"

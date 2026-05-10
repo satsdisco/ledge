@@ -14,14 +14,16 @@
     <key>com.apple.security.automation.apple-events</key>
     <true/>
 
+    <!-- Sparkle 2: lets the host app load Sparkle.framework even when the
+         framework's signing identity differs from the host's (true for
+         ad-hoc dev builds; for Developer ID releases we re-sign Sparkle
+         with our identity in scripts/release.sh). -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
     <!-- Ledge is NOT sandboxed in v1. Direct download via Developer ID,
          not Mac App Store, so we don't need (and don't want) the sandbox
          restrictions yet. If we ever ship to the App Store, set
          com.apple.security.app-sandbox = true and revisit file access. -->
-
-    <!-- Future: if we adopt Sparkle's auto-update with installer privileges,
-         add com.apple.security.cs.allow-unsigned-executable-memory and
-         com.apple.security.cs.disable-library-validation here. Not needed
-         today. -->
 </dict>
 </plist>

@@ -4,13 +4,14 @@ import KeyboardShortcuts
 
 struct SettingsScene: View {
     let loginItem: LoginItemService
+    let updater: UpdaterService
     let clocksStore: ClocksStore
     let enabledStore: ModuleEnabledStore
     let modulesCatalog: [(id: String, name: String, icon: String)]
 
     var body: some View {
         TabView {
-            GeneralPane(loginItem: loginItem)
+            GeneralPane(loginItem: loginItem, updater: updater)
                 .tabItem { Label("General", systemImage: "gear") }
             ModulesPane(enabled: enabledStore, catalog: modulesCatalog)
                 .tabItem { Label("Modules", systemImage: "square.grid.2x2") }
@@ -31,6 +32,7 @@ struct SettingsScene: View {
 
 private struct GeneralPane: View {
     @Bindable var loginItem: LoginItemService
+    @Bindable var updater: UpdaterService
 
     var body: some View {
         Form {
@@ -48,6 +50,29 @@ private struct GeneralPane: View {
             Section("Activation") {
                 LabeledContent("Toggle expand", value: "⌃⌥Space")
                 LabeledContent("Right-click", value: "Module switcher · Settings · Quit")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Check for updates automatically", isOn: Binding(
+                    get: { updater.automaticallyChecksForUpdates },
+                    set: { updater.automaticallyChecksForUpdates = $0 }
+                ))
+                HStack {
+                    Button("Check Now\u{2026}") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
+                    Spacer()
+                    if let last = updater.lastUpdateCheckDate {
+                        Text("Last checked \(last.formatted(.relative(presentation: .named)))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Updates are signed and delivered via Sparkle. The app will only install releases signed with Ledge\u{2019}s private key.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -278,7 +303,7 @@ private struct ShortcutsPane: View {
                        "Press \u{2303}\u{2325}V, click \u{201C}Capture\u{201D} in the panel, or drag any text / image / file onto the notch.")
                 tipRow("rectangle.and.text.magnifyingglass",
                        "Search before you scroll",
-                       "\u{2318}F, type a few letters \u{2014} pinned matches float to the top. Image entries are searchable by their OCR\u{2019}d text.")
+                       "\u{2318}F, type a few letters \u{2014} pinned matches float to the top.")
                 tipRow("pencil",
                        "Turn entries into snippets",
                        "Hover an entry and click the pencil (or right-click \u{2192} Edit) to rename and tweak. Pin it so it survives \u{201C}Clear\u{201D}.")
