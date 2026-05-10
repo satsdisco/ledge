@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone="yes"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>Ledge</title>
+        <link>https://github.com/satsdisco/ledge</link>
+        <description>Most recent updates to Ledge</description>
+        <language>en</language>
+
+        <!--
+            Each release appends one <item> below. The release script
+            (scripts/release.sh) runs sign_update on the DMG and emits a new
+            <item> block with sparkle:edSignature, length, and the GitHub
+            Releases download URL. See docs/SPARKLE_SETUP.md for the full flow.
+        -->
+    </channel>
+</rss>
