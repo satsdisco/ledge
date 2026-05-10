@@ -247,15 +247,76 @@ private struct ShortcutsPane: View {
         Form {
             Section {
                 KeyboardShortcuts.Recorder("Toggle Ledge", name: .toggleLedge)
+                KeyboardShortcuts.Recorder("Capture clipboard", name: .captureClipboard)
             } header: {
-                Text("Global shortcut")
+                Text("Global shortcuts")
             } footer: {
-                Text("Click the recorder to rebind. Press the new combination, or double-click to clear.")
+                Text("Active anywhere. Click a recorder to rebind \u{2014} press the new combination, or double-click to clear.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                shortcutRow("\u{2191} \u{2193}", "Move selection up / down")
+                shortcutRow("\u{23CE}", "Copy the selected entry & collapse the notch")
+                shortcutRow("space", "Quick Look the selected entry")
+                shortcutRow("\u{2318} 1\u{2013}9", "Copy the Nth visible entry")
+                shortcutRow("\u{2318} F", "Focus the search field")
+                shortcutRow("\u{2326}", "Remove the selected entry")
+                shortcutRow("\u{238B}", "Clear search / cancel edit")
+            } header: {
+                Text("Inside the Clipboard panel")
+            } footer: {
+                Text("These keys work after you click anywhere inside the expanded notch \u{2014} that hands keyboard focus to Ledge. Hover-only stays ambient and never steals focus from your active app.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                tipRow("doc.on.clipboard",
+                       "Three ways to stash",
+                       "Press \u{2303}\u{2325}V, click \u{201C}Capture\u{201D} in the panel, or drag any text / image / file onto the notch.")
+                tipRow("rectangle.and.text.magnifyingglass",
+                       "Search before you scroll",
+                       "\u{2318}F, type a few letters \u{2014} pinned matches float to the top. Image entries are searchable by their OCR\u{2019}d text.")
+                tipRow("pencil",
+                       "Turn entries into snippets",
+                       "Hover an entry and click the pencil (or right-click \u{2192} Edit) to rename and tweak. Pin it so it survives \u{201C}Clear\u{201D}.")
+                tipRow("eye",
+                       "Quick Look anything",
+                       "Select a row and press space \u{2014} works for long text, full-size images, and files.")
+                tipRow("lock.shield",
+                       "Concealed clipboards are skipped",
+                       "If 1Password / Bitwarden mark the clipboard as concealed, \u{2303}\u{2325}V will flash \u{201C}Skipped\u{201D} instead of stashing the secret.")
+            } header: {
+                Text("Tips")
+            }
         }
         .formStyle(.grouped)
+    }
+
+    private func shortcutRow(_ key: String, _ desc: String) -> some View {
+        HStack {
+            Text(key)
+                .font(.system(.body, design: .monospaced).weight(.semibold))
+                .frame(minWidth: 70, alignment: .leading)
+            Text(desc)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+    }
+
+    private func tipRow(_ icon: String, _ title: String, _ body: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .frame(width: 18)
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.body.weight(.medium))
+                Text(body).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
     }
 }
 

@@ -7,33 +7,65 @@ struct TimerCollapsedView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            switch state.phase {
-            case .running:
-                Circle()
-                    .fill(.green)
-                    .frame(width: 5, height: 5)
-                Text(state.formatted)
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
-            case .paused:
-                Image(systemName: "pause.fill")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.55))
-                Text(state.formatted)
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.7))
-            case .finished:
-                Image(systemName: "bell.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.yellow)
-                Text("done")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
-            case .idle:
-                Image(systemName: "timer")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.3))
+            switch state.mode {
+            case .timer: timerCollapsed
+            case .stopwatch: stopwatchCollapsed
             }
+        }
+    }
+
+    @ViewBuilder
+    private var timerCollapsed: some View {
+        switch state.phase {
+        case .running:
+            Circle()
+                .fill(.green)
+                .frame(width: 5, height: 5)
+            Text(state.formatted)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.9))
+        case .paused:
+            Image(systemName: "pause.fill")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white.opacity(0.55))
+            Text(state.formatted)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.7))
+        case .finished:
+            Image(systemName: "bell.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(.yellow)
+            Text("done")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+        case .idle:
+            Image(systemName: "timer")
+                .font(.system(size: 10))
+                .foregroundStyle(.white.opacity(0.3))
+        }
+    }
+
+    @ViewBuilder
+    private var stopwatchCollapsed: some View {
+        switch state.phase {
+        case .running:
+            Circle()
+                .fill(.green)
+                .frame(width: 5, height: 5)
+            Text(state.formattedElapsed)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.9))
+        case .paused:
+            Image(systemName: "pause.fill")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white.opacity(0.55))
+            Text(state.formattedElapsed)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.7))
+        case .idle, .finished:
+            Image(systemName: "stopwatch")
+                .font(.system(size: 10))
+                .foregroundStyle(.white.opacity(0.3))
         }
     }
 }
@@ -42,6 +74,7 @@ struct TimerCollapsedView: View {
 
 struct TimerExpandedView: View {
     @Bindable var state: TimerRunState
+    let onSetMode: (TimerRunState.Mode) -> Void
     let onSetPreset: (Int) -> Void
     let onStart: () -> Void
     let onPause: () -> Void
@@ -56,7 +89,12 @@ struct TimerExpandedView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            presetsRow
+            modeToggle
+            if state.mode == .timer {
+                presetsRow
+            } else {
+                stopwatchHeader
+            }
             timeDisplay
             actionsRow
         }
@@ -64,6 +102,42 @@ struct TimerExpandedView: View {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    // MARK: Mode toggle
+
+    private var modeToggle: some View {
+        HStack(spacing: 0) {
+            modeButton(.timer,     label: "Timer",     icon: "timer")
+            modeButton(.stopwatch, label: "Stopwatch", icon: "stopwatch")
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(.white.opacity(0.06))
+        )
+    }
+
+    private func modeButton(_ mode: TimerRunState.Mode, label: String, icon: String) -> some View {
+        let isActive = state.mode == mode
+        return Button { onSetMode(mode) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .medium))
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundStyle(.white.opacity(isActive ? 0.95 : 0.5))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(isActive ? .white.opacity(0.12) : .clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Timer presets
 
     private var presetsRow: some View {
         HStack(spacing: 6) {
@@ -87,12 +161,48 @@ struct TimerExpandedView: View {
         }
     }
 
-    private var timeDisplay: some View {
-        Text(state.formatted)
-            .font(.system(size: 28, weight: .semibold, design: .monospaced))
-            .foregroundStyle(state.phase == .finished ? .yellow : .white.opacity(0.95))
-            .monospacedDigit()
+    // MARK: Stopwatch header
+
+    private var stopwatchHeader: some View {
+        Text(stopwatchSubtitle)
+            .font(.system(size: 10))
+            .foregroundStyle(.white.opacity(0.4))
+            .frame(maxWidth: .infinity)
+            .frame(height: 22)
     }
+
+    private var stopwatchSubtitle: String {
+        switch state.phase {
+        case .running: return "running"
+        case .paused:  return "paused"
+        case .idle, .finished: return "ready"
+        }
+    }
+
+    // MARK: Display
+
+    private var timeDisplay: some View {
+        Text(displayString)
+            .font(.system(size: 28, weight: .semibold, design: .monospaced))
+            .foregroundStyle(displayTint)
+            .monospacedDigit()
+            .contentTransition(.numericText())
+            .animation(.easeOut(duration: 0.18), value: displayString)
+    }
+
+    private var displayString: String {
+        switch state.mode {
+        case .timer:    return state.formatted
+        case .stopwatch: return state.formattedElapsed
+        }
+    }
+
+    private var displayTint: Color {
+        if state.mode == .timer && state.phase == .finished { return .yellow }
+        return .white.opacity(0.95)
+    }
+
+    // MARK: Actions
 
     private var actionsRow: some View {
         HStack(spacing: 14) {
@@ -104,7 +214,7 @@ struct TimerExpandedView: View {
     private var primaryButton: some View {
         Button {
             switch state.phase {
-            case .running:                 onPause()
+            case .running:                  onPause()
             case .paused, .idle, .finished: onStart()
             }
         } label: {

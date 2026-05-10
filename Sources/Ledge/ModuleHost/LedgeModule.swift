@@ -17,6 +17,11 @@ protocol LedgeModule: AnyObject {
     /// Modules with content-heavy expanded views (Clocks, Shelf grid) ask for more room.
     var preferredExpandedSize: CGSize { get }
 
+    /// Modules that need text input or keyboard navigation (Clipboard) opt in.
+    /// When true, the panel is allowed to become key while this module is
+    /// active. Defaults to false so ambient modules never steal focus.
+    var wantsKeyboardFocus: Bool { get }
+
     func didActivate()
     func willDeactivate()
 }
@@ -25,6 +30,7 @@ extension LedgeModule {
     var acceptsDrops: Bool { false }
     func handleDrop(_ providers: [NSItemProvider]) -> Bool { false }
     var preferredExpandedSize: CGSize { CGSize(width: 420, height: 140) }
+    var wantsKeyboardFocus: Bool { false }
     func didActivate() {}
     func willDeactivate() {}
 }

@@ -8,14 +8,24 @@ extension KeyboardShortcuts.Name {
         "toggleLedge",
         default: .init(.space, modifiers: [.control, .option])
     )
+
+    /// Stash whatever is currently on the system clipboard into the
+    /// Clipboard module. Default: ⌃⌥V.
+    static let captureClipboard = Self(
+        "captureClipboard",
+        default: .init(.v, modifiers: [.control, .option])
+    )
 }
 
 /// Registers global hotkeys via the KeyboardShortcuts library (Carbon-backed,
 /// no Accessibility permission required) and persists user customizations.
 final class KeyboardShortcutCenter {
-    init(expansion: NotchExpansionController) {
+    init(expansion: NotchExpansionController, onCaptureClipboard: @escaping () -> Void) {
         KeyboardShortcuts.onKeyUp(for: .toggleLedge) { [weak expansion] in
             expansion?.toggle()
+        }
+        KeyboardShortcuts.onKeyUp(for: .captureClipboard) {
+            onCaptureClipboard()
         }
         Log.app.info("Keyboard shortcuts registered")
     }

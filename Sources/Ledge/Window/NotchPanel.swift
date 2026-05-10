@@ -6,6 +6,12 @@ import SwiftUI
 final class NotchPanel: NSPanel {
     let screenDescriptor: ScreenDescriptor
 
+    /// Closure consulted on every `canBecomeKey` query so the panel can let
+    /// keyboard focus in only when the active module asks for it (Clipboard).
+    /// Ambient modules (Bitcoin, Clocks) leave this returning false so
+    /// clicking inside the panel never steals focus from the user's app.
+    var wantsKeyProvider: (() -> Bool)?
+
     init(screen: ScreenDescriptor, contentRect: CGRect) {
         self.screenDescriptor = screen
         super.init(
@@ -28,7 +34,7 @@ final class NotchPanel: NSPanel {
         setFrame(contentRect, display: false)
     }
 
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool { wantsKeyProvider?() ?? false }
     override var canBecomeMain: Bool { false }
 
     func install(content: some View) {

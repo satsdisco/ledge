@@ -13,13 +13,17 @@ final class RootCoordinator {
     private lazy var timer = TimerModule(environment: env)
     private lazy var clocks = ClocksModule(environment: env)
     private lazy var bitcoin = BitcoinPriceModule(environment: env)
+    private lazy var clipboard = ClipboardModule(environment: env)
+    private lazy var notes = NotesModule(environment: env)
 
     private static let allModuleIDs: [String] = [
         FileShelfModule.identifier,
         NowPlayingModule.identifier,
         TimerModule.identifier,
         ClocksModule.identifier,
-        BitcoinPriceModule.identifier
+        BitcoinPriceModule.identifier,
+        ClipboardModule.identifier,
+        NotesModule.identifier
     ]
 
     /// Exposed for Settings UI so it can edit the clocks list live.
@@ -33,7 +37,7 @@ final class RootCoordinator {
         expansion: expansion,
         active: active,
         enabled: enabledStore,
-        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin]
+        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin, clipboard, notes]
     )
 
     /// Display info for Settings to render the modules list with names + icons.
@@ -43,13 +47,18 @@ final class RootCoordinator {
             (NowPlayingModule.identifier,   "Now Playing", "music.note"),
             (TimerModule.identifier,        "Timer",       "timer"),
             (ClocksModule.identifier,       "Clocks",      "globe"),
-            (BitcoinPriceModule.identifier, "Bitcoin",     "bitcoinsign.circle")
+            (BitcoinPriceModule.identifier, "Bitcoin",     "bitcoinsign.circle"),
+            (ClipboardModule.identifier,    "Clipboard",   "doc.on.clipboard"),
+            (NotesModule.identifier,        "Notes",       "square.and.pencil")
         ]
     }
     private lazy var displays = DisplayCoordinator { [weak self] screens in
         self?.panels.reconcile(with: screens)
     }
-    private lazy var shortcuts = KeyboardShortcutCenter(expansion: expansion)
+    private lazy var shortcuts = KeyboardShortcutCenter(
+        expansion: expansion,
+        onCaptureClipboard: { [weak self] in self?.clipboard.captureFromSystemClipboard() }
+    )
 
     func start() {
         registry.register(fileShelf)
@@ -57,6 +66,8 @@ final class RootCoordinator {
         registry.register(timer)
         registry.register(clocks)
         registry.register(bitcoin)
+        registry.register(clipboard)
+        registry.register(notes)
         registry.bootstrap()
         _ = shortcuts
         displays.start()

@@ -60,6 +60,10 @@ final class PanelManager {
             }
 
             let panel = NotchPanel(screen: screen, contentRect: rect)
+            panel.wantsKeyProvider = { [weak self] in
+                guard let self else { return false }
+                return self.activeModule()?.wantsKeyboardFocus ?? false
+            }
             let notchHeight = screen.safeAreaTop > 0
                 ? screen.safeAreaTop
                 : NotchGeometry.syntheticSize.height
@@ -113,4 +117,8 @@ final class PanelManager {
     }
 
     var managedDisplayIDs: Set<CGDirectDisplayID> { Set(panels.keys) }
+
+    private func activeModule() -> LedgeModule? {
+        modules.first { type(of: $0).identifier == active.activeID }
+    }
 }
