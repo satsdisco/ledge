@@ -81,6 +81,33 @@ if [[ -f "Resources/AppIcon.icns" ]]; then
         || /usr/libexec/PlistBuddy -c 'Set  :CFBundleIconFile      AppIcon' "${APP_DIR}/Contents/Info.plist"
 fi
 
+# 3a. Embed Sparkle.framework + re-sign nested helpers with our identity.
+SPARKLE_SRC="${BIN_PATH}/Sparkle.framework"
+if [[ -d "$SPARKLE_SRC" ]]; then
+    echo "▶︎ Embedding Sparkle.framework…"
+    mkdir -p "${APP_DIR}/Contents/Frameworks"
+    rm -rf "${APP_DIR}/Contents/Frameworks/Sparkle.framework"
+    cp -R "$SPARKLE_SRC" "${APP_DIR}/Contents/Frameworks/Sparkle.framework"
+    SPARKLE_DEST="${APP_DIR}/Contents/Frameworks/Sparkle.framework"
+
+    for nested in \
+        "${SPARKLE_DEST}/Versions/Current/XPCServices/Installer.xpc" \
+        "${SPARKLE_DEST}/Versions/Current/XPCServices/Downloader.xpc" \
+        "${SPARKLE_DEST}/Versions/Current/Resources/Updater.app" \
+        "${SPARKLE_DEST}/Versions/Current/Resources/Autoupdate"
+    do
+        if [[ -e "$nested" ]]; then
+            codesign --force --sign "${SIGN_IDENTITY}" \
+                --options runtime --timestamp \
+                "$nested"
+        fi
+    done
+
+    codesign --force --sign "${SIGN_IDENTITY}" \
+        --options runtime --timestamp \
+        "$SPARKLE_DEST"
+fi
+
 # 4. Sign
 echo "▶︎ Signing…"
 codesign --force \
@@ -126,12 +153,72 @@ fi
 SHA="$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')"
 SIZE_MB="$(du -h "$DMG_PATH" | awk '{print $1}')"
 
+# 8. Sparkle update signature + appcast item
+SIGN_UPDATE="$(find .build/artifacts -name sign_update -type f | head -1)"
+if [[ -z "$SIGN_UPDATE" ]]; then
+    echo "⚠︎  sign_update not found under .build/artifacts. Run 'swift build' once" >&2
+    echo "    so SwiftPM extracts the Sparkle artifact." >&2
+fi
+
+if [[ -n "$SIGN_UPDATE" ]]; then
+    echo "▶︎ Signing update…"
+    SIGN_OUTPUT="$("$SIGN_UPDATE" "$DMG_PATH")"
+    # Output looks like: sparkle:edSignature="..." length="..."
+
+    DMG_FILENAME="$(basename "$DMG_PATH")"
+    DOWNLOAD_URL="https://github.com/satsdisco/ledge/releases/download/v${VERSION}/${DMG_FILENAME}"
+    PUB_DATE="$(LC_TIME=en_US date -u '+%a, %d %b %Y %H:%M:%S +0000')"
+
+    APPCAST_ITEM="$(cat <<XML
+        <item>
+            <title>${VERSION}</title>
+            <pubDate>${PUB_DATE}</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>What's new in ${VERSION}</h3>
+                <ul>
+                    <li>Replace this with the release notes for ${VERSION}.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="${DOWNLOAD_URL}"
+                       sparkle:version="${BUILD}"
+                       sparkle:shortVersionString="${VERSION}"
+                       ${SIGN_OUTPUT}
+                       type="application/octet-stream" />
+        </item>
+XML
+)"
+
+    APPCAST_OUT="${DIST}/appcast-item-${VERSION}.xml"
+    printf '%s\n' "$APPCAST_ITEM" > "$APPCAST_OUT"
+fi
+
 cat <<EOF
 
 ✅ Release built
    ${DMG_PATH}
    ${SIZE_MB}    sha256: ${SHA}
 
-Distribute by uploading the DMG to your release host and publishing
-the SHA-256 alongside the download link.
+Next steps (Sparkle release flow):
+
+  1. Open ${APPCAST_OUT:-<sign_update missing>} and edit the
+     <description> with real release notes.
+
+  2. Paste that <item> block into docs/appcast.xml just inside the
+     <channel> tag (newest items first).
+
+  3. Commit and push docs/appcast.xml so GitHub Pages picks it up:
+
+       git add docs/appcast.xml
+       git commit -m "Release ${VERSION} appcast"
+       git push
+
+  4. Tag and create a GitHub release with the DMG attached:
+
+       git tag v${VERSION} && git push --tags
+       gh release create v${VERSION} "${DMG_PATH}" \\
+         --title "${VERSION}" --generate-notes
+
+  5. Existing installs will pick up the update on their next scheduled
+     check (default daily) or immediately via Settings → Check Now.
 EOF
