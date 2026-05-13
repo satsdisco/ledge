@@ -16,20 +16,39 @@ CONTENTS="$APP_DIR/Contents"
 rm -rf "$APP_DIR"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 
+# Ad-hoc identity for personal builds. Swap for `Developer ID Application: …`
+# when producing distributable builds (release.sh handles that path).
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+
 cp "$BIN_PATH/Ledge" "$CONTENTS/MacOS/Ledge"
 cp "Resources/Info.plist" "$CONTENTS/Info.plist"
 
-# Copy any SwiftPM-emitted resource bundle (Ledge_Ledge.bundle) into Resources/
-if compgen -G "$BIN_PATH/Ledge_Ledge.bundle" > /dev/null; then
-    cp -R "$BIN_PATH/Ledge_Ledge.bundle" "$CONTENTS/Resources/"
-fi
-
-# Also copy any SwiftPM SPM dependency bundles (e.g. KeyboardShortcuts_KeyboardShortcuts.bundle).
+# Copy SwiftPM-emitted resource bundles (Ledge_Ledge.bundle plus any SPM
+# dependency bundles like KeyboardShortcuts_KeyboardShortcuts.bundle).
+# SwiftPM emits each with a near-empty Info.plist (CFBundleDevelopmentRegion
+# only); macOS 26 rejects Bundle(url:) for that, so Bundle.module fatalErrors
+# the first time the package reads its resources. Backfill required keys and
+# codesign each bundle before sealing the app.
 shopt -s nullglob
 for bundle in "$BIN_PATH"/*.bundle; do
-    name="$(basename "$bundle")"
-    [[ "$name" == "Ledge_Ledge.bundle" ]] && continue
-    cp -R "$bundle" "$CONTENTS/Resources/"
+    name="$(basename "$bundle" .bundle)"
+    dest="$CONTENTS/Resources/$(basename "$bundle")"
+    cp -R "$bundle" "$dest"
+
+    plist="$dest/Info.plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.satsdisco.ledge.resources.${name}" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleIdentifier com.satsdisco.ledge.resources.${name}" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string BNDL" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundlePackageType BNDL" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleName string ${name}" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleName ${name}" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleInfoDictionaryVersion string 6.0" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleInfoDictionaryVersion 6.0" "$plist"
+
+    codesign --force --sign "$SIGN_IDENTITY" \
+        --options runtime \
+        --timestamp=none \
+        "$dest"
 done
 shopt -u nullglob
 
@@ -43,7 +62,6 @@ if [[ -d "$SPARKLE_SRC" ]]; then
     rm -rf "$CONTENTS/Frameworks/Sparkle.framework"
     cp -R "$SPARKLE_SRC" "$CONTENTS/Frameworks/Sparkle.framework"
     SPARKLE_DEST="$CONTENTS/Frameworks/Sparkle.framework"
-    SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 
     # Sign nested helpers first. Sparkle 2.9 layout puts Updater.app and
     # Autoupdate at Versions/Current directly, not under Resources/.
@@ -68,9 +86,6 @@ if [[ -d "$SPARKLE_SRC" ]]; then
         "$SPARKLE_DEST"
 fi
 
-# Sign with Hardened Runtime + entitlements (ad-hoc identity for personal builds).
-# Once you set up Developer ID, swap `-` for `Developer ID Application: NAME (TEAMID)`.
-SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 codesign --force \
     --sign "$SIGN_IDENTITY" \
     --options runtime \

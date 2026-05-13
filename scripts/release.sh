@@ -69,9 +69,29 @@ mkdir -p "${APP_DIR}/Contents/MacOS" "${APP_DIR}/Contents/Resources"
 cp "${BIN_PATH}/${APP_NAME}" "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 cp "Resources/Info.plist"     "${APP_DIR}/Contents/Info.plist"
 
+# SwiftPM emits each resource bundle with a near-empty Info.plist
+# (CFBundleDevelopmentRegion only). macOS 26 rejects Bundle(url:) for that, so
+# Bundle.module fatalErrors the first time the package reads its resources.
+# Backfill the required keys and codesign each bundle before sealing the app.
 shopt -s nullglob
 for bundle in "${BIN_PATH}"/*.bundle; do
-    cp -R "$bundle" "${APP_DIR}/Contents/Resources/"
+    name="$(basename "$bundle" .bundle)"
+    dest="${APP_DIR}/Contents/Resources/$(basename "$bundle")"
+    cp -R "$bundle" "$dest"
+
+    plist="$dest/Info.plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.satsdisco.ledge.resources.${name}" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleIdentifier com.satsdisco.ledge.resources.${name}" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string BNDL" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundlePackageType BNDL" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleName string ${name}" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleName ${name}" "$plist"
+    /usr/libexec/PlistBuddy -c "Add :CFBundleInfoDictionaryVersion string 6.0" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set  :CFBundleInfoDictionaryVersion 6.0" "$plist"
+
+    codesign --force --sign "${SIGN_IDENTITY}" \
+        --options runtime --timestamp \
+        "$dest"
 done
 shopt -u nullglob
 
