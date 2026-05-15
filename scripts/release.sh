@@ -57,8 +57,25 @@ echo
 rm -rf "$DIST"
 mkdir -p "$DIST"
 
-# 2. Release build
+# 2. Release build.
+#
+# Resolve deps so .build/checkouts/ exists, then patch the one call site in
+# KeyboardShortcuts that uses Bundle.module. SwiftPM auto-generates a
+# Bundle.module accessor that looks at Bundle.main.bundleURL/<name>.bundle —
+# the top of the .app, outside Contents/. macOS apps put resources in
+# Contents/Resources/ (codesign requires it), so the accessor never finds
+# them on user machines and Bundle.module fatalErrors the first time the
+# package reads its localized strings. Rather than fight the generated
+# accessor (regenerated each clean build), we patch the dependency source to
+# look up the bundle at the actual macOS resource location. The patch is
+# idempotent: a second pass through sed leaves a patched file untouched.
 echo "▶︎ Building (release)…"
+swift package resolve > /dev/null
+KS_UTILS=".build/checkouts/KeyboardShortcuts/Sources/KeyboardShortcuts/Utilities.swift"
+if [[ -f "$KS_UTILS" ]]; then
+    sed -i '' 's|bundle: \.module|bundle: (Bundle.main.resourceURL.flatMap { Bundle(url: $0.appendingPathComponent("KeyboardShortcuts_KeyboardShortcuts.bundle")) } ?? Bundle.main)|g' "$KS_UTILS"
+fi
+
 swift build -c release > /dev/null
 
 BIN_PATH="$(swift build -c release --show-bin-path)"
@@ -69,10 +86,9 @@ mkdir -p "${APP_DIR}/Contents/MacOS" "${APP_DIR}/Contents/Resources"
 cp "${BIN_PATH}/${APP_NAME}" "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 cp "Resources/Info.plist"     "${APP_DIR}/Contents/Info.plist"
 
-# SwiftPM emits each resource bundle with a near-empty Info.plist
-# (CFBundleDevelopmentRegion only). macOS 26 rejects Bundle(url:) for that, so
-# Bundle.module fatalErrors the first time the package reads its resources.
-# Backfill the required keys and codesign each bundle before sealing the app.
+# Bundles go in Contents/Resources/ (macOS convention, required by codesign).
+# Backfill Info.plist keys so the bundle is signable (SwiftPM emits one with
+# only CFBundleDevelopmentRegion).
 shopt -s nullglob
 for bundle in "${BIN_PATH}"/*.bundle; do
     name="$(basename "$bundle" .bundle)"
