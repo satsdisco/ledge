@@ -11,8 +11,10 @@ final class NowPlayingState {
 final class NowPlayingModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.nowplaying"
     let displayName = "Now Playing"
+    let iconName = "music.note"
 
     let state = NowPlayingState()
+    let audio = AudioOutputController()
     private let controller: MediaController
     private var pollTimer: Timer?
 
@@ -25,8 +27,12 @@ final class NowPlayingModule: LedgeModule {
 
     var collapsedView: AnyView { AnyView(NowPlayingCollapsedView(state: state)) }
     var expandedView: AnyView {
-        AnyView(NowPlayingExpandedView(state: state, controller: controller))
+        AnyView(NowPlayingExpandedView(state: state, audio: audio, controller: controller))
     }
+
+    /// Roomier panel — album art needs space to breathe, plus the volume
+    /// bar lives below the player.
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 220) }
 
     // MARK: - Polling
 

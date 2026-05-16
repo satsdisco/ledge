@@ -12,15 +12,15 @@ struct FileShelfCollapsedView: View {
             if store.items.isEmpty {
                 Image(systemName: "tray")
                     .font(.system(size: 10, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
             } else {
                 Image(systemName: "tray.full.fill")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
                 Text("\(store.items.count)")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(Typography.labelMedium)
                     .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
             }
         }
     }
@@ -51,13 +51,13 @@ struct FileShelfExpandedView: View {
                     store.clearUnpinned()
                 } label: {
                     Text("Clear")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(Typography.labelMedium)
+                        .foregroundStyle(Palette.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(.white.opacity(0.08))
+                                .fill(Palette.separator)
                         )
                 }
                 .buttonStyle(.plain)
@@ -73,10 +73,10 @@ struct FileShelfExpandedView: View {
         VStack(spacing: 6) {
             Image(systemName: "tray")
                 .font(.system(size: 20))
-                .foregroundStyle(.white.opacity(0.25))
+                .foregroundStyle(Palette.quaternary)
             Text("Drop files here")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.4))
+                .font(Typography.body)
+                .foregroundStyle(Palette.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -97,11 +97,13 @@ private struct ShelfItemView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(.white.opacity(0.08), lineWidth: 1)
+                            .stroke(Palette.separator, lineWidth: 1)
                     )
                     .opacity(item.isStale ? 0.4 : 1.0)
 
                 if item.isPinned {
+                    // Pin badge — blue rather than Palette.accent so the "saved/
+                    // pinned" affordance reads distinctly from kinetic accents.
                     Image(systemName: "pin.fill")
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(.white)
@@ -111,8 +113,8 @@ private struct ShelfItemView: View {
                 }
             }
             Text(item.displayName)
-                .font(.system(size: 9))
-                .foregroundStyle(.white.opacity(0.75))
+                .font(Typography.caption)
+                .foregroundStyle(Palette.secondary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .truncationMode(.middle)
@@ -122,7 +124,7 @@ private struct ShelfItemView: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(hovering ? .white.opacity(0.08) : .clear)
+                .fill(hovering ? Palette.separator : .clear)
         )
         .onHover { hovering = $0 }
         .contextMenu { contextMenuItems }
@@ -145,10 +147,10 @@ private struct ShelfItemView: View {
                 .padding(2)
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.05))
+                RoundedRectangle(cornerRadius: 8).fill(Palette.card)
                 Image(systemName: "questionmark")
                     .font(.system(size: 16))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
             }
         }
     }

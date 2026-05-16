@@ -12,15 +12,15 @@ struct NotesCollapsedView: View {
             if chars == 0 {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 10, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
             } else {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
                 Text("\(chars)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
             }
         }
     }
@@ -77,17 +77,17 @@ struct NotesExpandedView: View {
             HStack(spacing: 6) {
                 Text("Today")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .foregroundStyle(Palette.primary)
                 Text("\u{00B7}")
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(Palette.quaternary)
                 Text(dayHeaderFormatter.string(from: Date()))
                     .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Palette.secondary)
                 Spacer()
                 if !draftBody.isEmpty {
                     Text(stats(for: draftBody))
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.35))
+                        .foregroundStyle(Palette.tertiary)
                 }
             }
 
@@ -95,7 +95,7 @@ struct NotesExpandedView: View {
                 if draftBody.isEmpty {
                     Text("Type a quick note\u{2026}")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.3))
+                        .foregroundStyle(Palette.quaternary)
                         .padding(.horizontal, 4)
                         .padding(.top, 6)
                         .allowsHitTesting(false)
@@ -103,18 +103,18 @@ struct NotesExpandedView: View {
                 TextEditor(text: $draftBody)
                     .scrollContentBackground(.hidden)
                     .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(Palette.primary)
                     .focused($editorFocused)
                     .padding(.horizontal, 1)
             }
             .frame(minHeight: 110, maxHeight: 140)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(.white.opacity(editorFocused ? 0.06 : 0.03))
+                    .fill(editorFocused ? Palette.card : Palette.card.opacity(0.5))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(.white.opacity(editorFocused ? 0.18 : 0.08), lineWidth: 1)
+                    .stroke(editorFocused ? Palette.highlight : Palette.separator, lineWidth: 1)
             )
         }
     }
@@ -131,15 +131,15 @@ struct NotesExpandedView: View {
             HStack {
                 Text("Archive")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(Palette.secondary)
                 if !store.archive.isEmpty {
                     Text("\(store.archive.count)")
                         .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(Palette.tertiary)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
                         .background(
-                            Capsule().fill(.white.opacity(0.08))
+                            Capsule().fill(Palette.separator)
                         )
                 }
                 Spacer()
@@ -148,7 +148,7 @@ struct NotesExpandedView: View {
             if store.archive.isEmpty {
                 Text("Yesterday\u{2019}s notes will appear here.")
                     .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
                     .padding(.vertical, 4)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
@@ -184,14 +184,14 @@ private struct ArchiveRow: View {
             HStack(spacing: 6) {
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(Palette.tertiary)
                     .frame(width: 10)
                 Text(archiveDateFormatter.string(from: entry.createdAt))
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(Palette.primary)
                 Text(summary)
                     .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(Palette.tertiary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 4)
@@ -201,7 +201,7 @@ private struct ArchiveRow: View {
                 } else {
                     Text(archiveTimeFormatter.string(from: entry.modifiedAt))
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.3))
+                        .foregroundStyle(Palette.quaternary)
                 }
             }
             .padding(.horizontal, 6)
@@ -220,7 +220,7 @@ private struct ArchiveRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(hovering ? .white.opacity(0.05) : .clear)
+                .fill(hovering ? Palette.card : .clear)
         )
         .onHover { hovering = $0 }
     }
@@ -232,7 +232,7 @@ private struct ArchiveRow: View {
         if entry.body.isEmpty {
             Text("(empty)")
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.3))
+                .foregroundStyle(Palette.quaternary)
         } else if let attributed = try? AttributedString(
             markdown: entry.body,
             options: AttributedString.MarkdownParsingOptions(
@@ -241,12 +241,12 @@ private struct ArchiveRow: View {
         ) {
             Text(attributed)
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.85))
-                .tint(.white.opacity(0.95))
+                .foregroundStyle(Palette.primary)
+                .tint(Palette.primary)
         } else {
             Text(entry.body)
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(Palette.primary)
         }
     }
 
@@ -263,11 +263,11 @@ private struct ArchiveRow: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(Palette.secondary)
                 .frame(width: 18, height: 18)
                 .background(
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(.white.opacity(0.10))
+                        .fill(Palette.highlight)
                 )
         }
         .buttonStyle(.plain)

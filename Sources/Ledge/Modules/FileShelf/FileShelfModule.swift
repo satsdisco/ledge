@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 final class FileShelfModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.fileshelf"
     let displayName = "File Shelf"
+    let iconName = "tray.full"
     var acceptsDrops: Bool { true }
 
     let store = FileShelfStore()

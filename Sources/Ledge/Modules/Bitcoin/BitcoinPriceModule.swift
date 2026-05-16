@@ -12,6 +12,7 @@ final class BitcoinPriceState {
 final class BitcoinPriceModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.bitcoin"
     let displayName = "Bitcoin"
+    let iconName = "bitcoinsign.circle"
 
     let state = BitcoinPriceState()
     private let service = BitcoinPriceService()
@@ -32,7 +33,7 @@ final class BitcoinPriceModule: LedgeModule {
     var expandedView: AnyView { AnyView(BitcoinExpandedView(state: state)) }
 
     /// Slightly taller than default so the sparkline has room to breathe.
-    var preferredExpandedSize: CGSize { CGSize(width: 440, height: 170) }
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 180) }
 
     // MARK: - Polling
 

@@ -4,6 +4,7 @@ import AppKit
 final class NotesModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.notes"
     let displayName = "Notes"
+    let iconName = "square.and.pencil"
     var wantsKeyboardFocus: Bool { true }
 
     let store = NotesStore()
@@ -23,7 +24,7 @@ final class NotesModule: LedgeModule {
     }
 
     /// Roomy: editor + archive list. Tallest of the modules.
-    var preferredExpandedSize: CGSize { CGSize(width: 480, height: 340) }
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 360) }
 
     func didActivate() {
         // Catch up if the app was running across midnight.

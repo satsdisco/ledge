@@ -14,13 +14,14 @@ struct BitcoinCollapsedView: View {
                 .foregroundStyle(bitcoinOrange)
             if let snap = state.snapshot {
                 Text(BitcoinFormat.compact(snap.priceUSD))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .font(Typography.labelMedium)
                     .monospacedDigit()
+                    .foregroundStyle(Palette.primary)
             } else {
                 Text("—")
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .font(Typography.labelMedium)
+                    .monospacedDigit()
+                    .foregroundStyle(Palette.tertiary)
             }
         }
     }
@@ -54,21 +55,23 @@ struct BitcoinExpandedView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(bitcoinOrange)
                     Text("BTC / USD")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.55))
+                        .font(Typography.label)
+                        .foregroundStyle(Palette.secondary)
                         .tracking(0.5)
                 }
                 Spacer()
                 Text(updatedString(for: snap.updatedAt))
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.tertiary)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(BitcoinFormat.full(snap.priceUSD))
-                    .font(.system(size: 26, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.96))
+                    .font(Typography.display)
+                    .foregroundStyle(Palette.primary)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 changeBadge(snap)
             }
@@ -87,7 +90,7 @@ struct BitcoinExpandedView: View {
             switch snap.trend {
             case .up: return .green
             case .down: return .red
-            case .flat: return .white.opacity(0.5)
+            case .flat: return Palette.secondary
             }
         }()
         let arrow: String = {
@@ -100,7 +103,7 @@ struct BitcoinExpandedView: View {
         return HStack(spacing: 2) {
             Image(systemName: arrow).font(.system(size: 9, weight: .bold))
             Text(BitcoinFormat.change(snap.change24hPct))
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(Typography.label)
                 .monospacedDigit()
         }
         .foregroundStyle(color)
@@ -117,8 +120,8 @@ struct BitcoinExpandedView: View {
             ProgressView()
                 .controlSize(.small)
             Text("Fetching BTC price…")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.55))
+                .font(Typography.body)
+                .foregroundStyle(Palette.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -127,10 +130,10 @@ struct BitcoinExpandedView: View {
         VStack(spacing: 4) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 18))
-                .foregroundStyle(.white.opacity(0.4))
+                .foregroundStyle(Palette.tertiary)
             Text(state.lastError ?? "Couldn't reach CoinGecko")
-                .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.5))
+                .font(Typography.labelMedium)
+                .foregroundStyle(Palette.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -154,7 +157,7 @@ private struct SparklineView: View {
         switch trend {
         case .up: return .green
         case .down: return .red
-        case .flat: return .white.opacity(0.5)
+        case .flat: return Palette.secondary
         }
     }
 
@@ -167,7 +170,8 @@ private struct SparklineView: View {
             let span = max(0.0001, maxV - minV)
 
             ZStack {
-                // Filled area under the line for emphasis
+                // Soft gradient fill — bright at the line, fades to clear
+                // at the bottom. Reads premium next to the hero price.
                 Path { p in
                     guard !values.isEmpty else { return }
                     p.move(to: CGPoint(x: 0, y: h))
@@ -179,8 +183,15 @@ private struct SparklineView: View {
                     p.addLine(to: CGPoint(x: w, y: h))
                     p.closeSubpath()
                 }
-                .fill(color.opacity(0.18))
+                .fill(
+                    LinearGradient(
+                        colors: [color.opacity(0.28), color.opacity(0.04)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
+                // The line itself
                 Path { p in
                     guard !values.isEmpty else { return }
                     for (i, v) in values.enumerated() {
@@ -190,7 +201,23 @@ private struct SparklineView: View {
                         else      { p.addLine(to: CGPoint(x: x, y: y)) }
                     }
                 }
-                .stroke(color, style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
+                .stroke(color, style: StrokeStyle(lineWidth: 1.4, lineCap: .round, lineJoin: .round))
+
+                // End cap — a small dot at the latest price so the eye
+                // lands on "now" rather than the whole curve.
+                if let last = values.last {
+                    let lastX = w
+                    let lastY = h - h * CGFloat((last - minV) / span)
+                    Circle()
+                        .fill(color)
+                        .frame(width: 5, height: 5)
+                        .position(x: lastX - 2.5, y: lastY)
+                    Circle()
+                        .fill(color.opacity(0.25))
+                        .frame(width: 11, height: 11)
+                        .position(x: lastX - 2.5, y: lastY)
+                        .blendMode(.plusLighter)
+                }
             }
         }
     }

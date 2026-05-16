@@ -7,6 +7,7 @@ struct NotchGeometryTests {
     private static let notched = ScreenDescriptor(
         displayID: 1,
         frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
+        visibleFrame: CGRect(x: 0, y: 0, width: 1512, height: 944),
         safeAreaTop: 38,
         auxiliaryTopLeft:  CGRect(x: 0,   y: 944, width: 700, height: 38),
         auxiliaryTopRight: CGRect(x: 812, y: 944, width: 700, height: 38),
@@ -16,6 +17,7 @@ struct NotchGeometryTests {
     private static let flat = ScreenDescriptor(
         displayID: 2,
         frame: CGRect(x: 1512, y: 0, width: 2560, height: 1440),
+        visibleFrame: CGRect(x: 1512, y: 0, width: 2560, height: 1416),
         safeAreaTop: 0,
         auxiliaryTopLeft: nil,
         auxiliaryTopRight: nil,
@@ -35,10 +37,10 @@ struct NotchGeometryTests {
         #expect(NotchGeometry.notchRect(for: Self.flat, synthetic: false) == nil)
     }
 
-    @Test func flatScreenWithSyntheticReturnsCenteredRect() {
+    @Test func flatScreenWithSyntheticReturnsRectMatchingMenuBar() {
         let rect = NotchGeometry.notchRect(for: Self.flat, synthetic: true)
-        #expect(rect?.width == NotchGeometry.syntheticSize.width)
-        #expect(rect?.height == NotchGeometry.syntheticSize.height)
+        #expect(rect?.width == NotchGeometry.syntheticWidth)
+        #expect(rect?.height == 24)
         #expect(rect?.midX == Self.flat.frame.midX)
         #expect(rect?.maxY == Self.flat.frame.maxY)
     }

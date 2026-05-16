@@ -12,15 +12,15 @@ struct ClipboardCollapsedView: View {
             if store.items.isEmpty {
                 Image(systemName: "doc.on.clipboard")
                     .font(.system(size: 10, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
             } else {
                 Image(systemName: "doc.on.clipboard.fill")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
                 Text("\(store.items.count)")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Palette.primary)
             }
         }
     }
@@ -85,22 +85,22 @@ struct ClipboardExpandedView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.35))
+                .foregroundStyle(Palette.tertiary)
             TextField("Search", text: $store.searchQuery)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(Palette.primary)
                 .focused($focus, equals: .search)
 
             Button(action: capture) {
                 Text(captureButtonLabel)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(captureFlash == .none ? 0.7 : 0.95))
+                    .foregroundStyle(captureFlash == .none ? Palette.secondary : Palette.primary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2)
                     .background(
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(.white.opacity(captureBgOpacity))
+                            .fill(captureBgFill)
                     )
             }
             .buttonStyle(.plain)
@@ -110,12 +110,12 @@ struct ClipboardExpandedView: View {
                 Button(action: { store.clearUnpinned() }) {
                     Text("Clear")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(Palette.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(.white.opacity(0.08))
+                                .fill(Palette.separator)
                         )
                 }
                 .buttonStyle(.plain)
@@ -132,11 +132,15 @@ struct ClipboardExpandedView: View {
         }
     }
 
-    private var captureBgOpacity: Double {
+    private var captureBgFill: Color {
         switch captureFlash {
-        case .captured: return 0.18
-        case .skipped:  return 0.18
-        case .none:     return 0.10
+        // Flashes get a stronger highlight for the brief moment we want the
+        // user to notice the capture succeeded (or got skipped). 0.18 white
+        // doesn't live in the palette — stays inline since it's purely
+        // transient micro-feedback.
+        case .captured: return .white.opacity(0.18)
+        case .skipped:  return .white.opacity(0.18)
+        case .none:     return Palette.highlight
         }
     }
 
@@ -197,7 +201,7 @@ struct ClipboardExpandedView: View {
             Spacer()
             Text("click to enable keys")
                 .font(.system(size: 8, weight: .regular))
-                .foregroundStyle(.white.opacity(0.25))
+                .foregroundStyle(Palette.quaternary)
                 .italic()
         }
         .padding(.horizontal, 14)
@@ -208,16 +212,16 @@ struct ClipboardExpandedView: View {
         HStack(spacing: 3) {
             Text(key)
                 .font(.system(size: 8, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(Palette.secondary)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)
                 .background(
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(.white.opacity(0.10))
+                        .fill(Palette.highlight)
                 )
             Text(label)
                 .font(.system(size: 9))
-                .foregroundStyle(.white.opacity(0.35))
+                .foregroundStyle(Palette.tertiary)
         }
     }
 
@@ -225,10 +229,10 @@ struct ClipboardExpandedView: View {
         VStack(spacing: 6) {
             Image(systemName: "doc.on.clipboard")
                 .font(.system(size: 20))
-                .foregroundStyle(.white.opacity(0.25))
+                .foregroundStyle(Palette.quaternary)
             Text("Drop or press \u{2303}\u{2325}V to stash")
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.4))
+                .foregroundStyle(Palette.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -322,7 +326,7 @@ private struct ClipboardRowView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(isSelected ? Color.white.opacity(0.20) : Color.clear, lineWidth: 1)
+                .stroke(isSelected ? Palette.highlight : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
@@ -335,8 +339,8 @@ private struct ClipboardRowView: View {
     }
 
     private var rowBackground: Color {
-        if isSelected { return .white.opacity(0.10) }
-        return hovering ? .white.opacity(0.07) : .white.opacity(0.03)
+        if isSelected { return Palette.highlight }
+        return hovering ? Palette.separator : Palette.card
     }
 
     // MARK: Row content (non-edit)
@@ -350,7 +354,7 @@ private struct ClipboardRowView: View {
                 titleLine
                 Text(secondaryLine)
                     .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(Palette.tertiary)
                     .lineLimit(1)
             }
 
@@ -369,35 +373,35 @@ private struct ClipboardRowView: View {
             if item.hasRichText {
                 Text("RTF")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(Palette.secondary)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(.white.opacity(0.08))
+                            .fill(Palette.separator)
                     )
             }
             if item.kind == .image, item.ocrText != nil {
                 Text("Aa")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(Palette.secondary)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(.white.opacity(0.10))
+                            .fill(Palette.highlight)
                     )
                     .help("This image has recognized text. Right-click to use it.")
             }
             if item.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(Palette.secondary)
             }
             if let n = shortcutNumber {
                 Text("\u{2318}\(n)")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(Palette.tertiary)
             }
         }
     }
@@ -422,11 +426,11 @@ private struct ClipboardRowView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(Palette.secondary)
                 .frame(width: 20, height: 20)
                 .background(
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(.white.opacity(0.08))
+                        .fill(Palette.separator)
                 )
         }
         .buttonStyle(.plain)
@@ -445,7 +449,7 @@ private struct ClipboardRowView: View {
         }()
         Text(displayText)
             .font(.system(size: 11))
-            .foregroundStyle(.white.opacity(item.isStale ? 0.4 : 0.92))
+            .foregroundStyle(item.isStale ? Palette.tertiary : Palette.primary)
             .lineLimit(lineLimit)
             .truncationMode(.tail)
             .multilineTextAlignment(.leading)
@@ -476,11 +480,11 @@ private struct ClipboardRowView: View {
         case .text:
             Image(systemName: "text.alignleft")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(Palette.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(.white.opacity(0.08))
+                        .fill(Palette.separator)
                 )
         case .image:
             if let url = store.imageURL(for: item),
@@ -494,7 +498,7 @@ private struct ClipboardRowView: View {
             } else {
                 Image(systemName: "photo")
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Palette.secondary)
             }
         case .file:
             if let url = item.resolvedURL {
@@ -505,7 +509,7 @@ private struct ClipboardRowView: View {
             } else {
                 Image(systemName: "questionmark.app.dashed")
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(Palette.tertiary)
             }
         }
     }
@@ -602,11 +606,11 @@ private struct ClipboardEditor: View {
             TextField("Title (optional)", text: $title)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(Palette.primary)
             TextEditor(text: $text)
                 .scrollContentBackground(.hidden)
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(Palette.primary)
                 .frame(minHeight: 60, maxHeight: 100)
                 .focused($bodyFocused)
             HStack(spacing: 6) {
@@ -614,18 +618,18 @@ private struct ClipboardEditor: View {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(.plain)
                     .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Palette.secondary)
                 Button("Save") {
                     onCommit(title.isEmpty ? nil : title, text)
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.95))
+                .foregroundStyle(Palette.primary)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)
                 .background(
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(.white.opacity(0.18))
+                        .fill(Palette.highlight)
                 )
             }
         }

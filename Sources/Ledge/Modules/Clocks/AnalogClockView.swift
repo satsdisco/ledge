@@ -14,7 +14,7 @@ struct AnalogClockView: View {
 
             // Face
             let face = Path(ellipseIn: CGRect(x: 0.5, y: 0.5, width: w - 1, height: h - 1))
-            ctx.stroke(face, with: .color(.white.opacity(0.35)), lineWidth: 1)
+            ctx.stroke(face, with: .color(Palette.tertiary), lineWidth: 1)
 
             // Tick marks at 12/3/6/9
             for i in 0..<4 {
@@ -26,7 +26,7 @@ struct AnalogClockView: View {
                 var tick = Path()
                 tick.move(to: inner)
                 tick.addLine(to: outer)
-                ctx.stroke(tick, with: .color(.white.opacity(0.55)), lineWidth: 1)
+                ctx.stroke(tick, with: .color(Palette.secondary), lineWidth: 1)
             }
 
             // Time components in the target zone
@@ -41,7 +41,7 @@ struct AnalogClockView: View {
             let hAngle = (hour.truncatingRemainder(dividingBy: 12) / 12) * 2 * .pi - .pi / 2
             ctx.stroke(
                 handPath(from: center, angle: hAngle, length: r * 0.52),
-                with: .color(.white.opacity(0.95)),
+                with: .color(Palette.primary),
                 lineWidth: 1.6
             )
 
@@ -49,15 +49,15 @@ struct AnalogClockView: View {
             let mAngle = (minute / 60) * 2 * .pi - .pi / 2
             ctx.stroke(
                 handPath(from: center, angle: mAngle, length: r * 0.78),
-                with: .color(.white.opacity(0.95)),
+                with: .color(Palette.primary),
                 lineWidth: 1
             )
 
-            // Second hand (pink, thin)
+            // Second hand — accent color, kinetic.
             let sAngle = (second / 60) * 2 * .pi - .pi / 2
             ctx.stroke(
                 handPath(from: center, angle: sAngle, length: r * 0.82),
-                with: .color(.pink.opacity(0.9)),
+                with: .color(Palette.accent.opacity(0.9)),
                 lineWidth: 0.6
             )
 

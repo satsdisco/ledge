@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 final class ClipboardModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.clipboard"
     let displayName = "Clipboard"
+    let iconName = "doc.on.clipboard"
     var acceptsDrops: Bool { true }
     var wantsKeyboardFocus: Bool { true }
 
@@ -31,7 +32,7 @@ final class ClipboardModule: LedgeModule {
         AnyView(ClipboardExpandedView(store: store))
     }
 
-    var preferredExpandedSize: CGSize { CGSize(width: 460, height: 280) }
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 300) }
 
     /// Captures the system clipboard contents into the stash. Wired to a
     /// global hotkey by `KeyboardShortcutCenter`.

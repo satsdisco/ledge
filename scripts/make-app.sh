@@ -33,9 +33,25 @@ CONTENTS="$APP_DIR/Contents"
 rm -rf "$APP_DIR"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 
-# Ad-hoc identity for personal builds. Swap for `Developer ID Application: …`
-# when producing distributable builds (release.sh handles that path).
-SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+# Resolve signing identity. Order of preference:
+#   1. Whatever the user passes via SIGN_IDENTITY (release.sh sets this).
+#   2. The first Developer ID Application cert found in the keychain — TCC
+#      needs a stable code identity to attribute permission prompts to, and
+#      ad-hoc signed dev builds get silently denied for things like
+#      EventKit/Calendar access on macOS 26.
+#   3. Fall back to ad-hoc (`-`) for users without a Developer ID cert.
+if [[ -z "${SIGN_IDENTITY:-}" ]]; then
+    DEV_ID="$(security find-identity -p codesigning -v 2>/dev/null \
+        | awk -F'"' '/Developer ID Application:/ {print $2; exit}')"
+    if [[ -n "$DEV_ID" ]]; then
+        SIGN_IDENTITY="$DEV_ID"
+        echo "▶︎ Using Developer ID: $SIGN_IDENTITY"
+    else
+        SIGN_IDENTITY="-"
+        echo "▶︎ No Developer ID in keychain — using ad-hoc signature."
+        echo "   (Some macOS permission prompts won't fire on ad-hoc builds.)"
+    fi
+fi
 
 cp "$BIN_PATH/Ledge" "$CONTENTS/MacOS/Ledge"
 cp "Resources/Info.plist" "$CONTENTS/Info.plist"

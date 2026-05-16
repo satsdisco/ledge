@@ -18,30 +18,35 @@ struct TimerCollapsedView: View {
     private var timerCollapsed: some View {
         switch state.phase {
         case .running:
+            // Green "go" for active timer — distinct from kinetic accent (pink)
+            // and pinned-state blue. Status colors keep their own vocabulary.
             Circle()
                 .fill(.green)
                 .frame(width: 5, height: 5)
             Text(state.formatted)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(Typography.labelMedium)
+                .monospacedDigit()
+                .foregroundStyle(Palette.primary)
         case .paused:
             Image(systemName: "pause.fill")
                 .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(Palette.secondary)
             Text(state.formatted)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.7))
+                .font(Typography.labelMedium)
+                .monospacedDigit()
+                .foregroundStyle(Palette.secondary)
         case .finished:
+            // Yellow attention for "ding, your timer is up" — status, not accent.
             Image(systemName: "bell.fill")
                 .font(.system(size: 10))
                 .foregroundStyle(.yellow)
             Text("done")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(Typography.labelMedium)
+                .foregroundStyle(Palette.primary)
         case .idle:
             Image(systemName: "timer")
                 .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.3))
+                .foregroundStyle(Palette.quaternary)
         }
     }
 
@@ -53,19 +58,21 @@ struct TimerCollapsedView: View {
                 .fill(.green)
                 .frame(width: 5, height: 5)
             Text(state.formattedElapsed)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(Typography.labelMedium)
+                .monospacedDigit()
+                .foregroundStyle(Palette.primary)
         case .paused:
             Image(systemName: "pause.fill")
                 .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(Palette.secondary)
             Text(state.formattedElapsed)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.7))
+                .font(Typography.labelMedium)
+                .monospacedDigit()
+                .foregroundStyle(Palette.secondary)
         case .idle, .finished:
             Image(systemName: "stopwatch")
                 .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.3))
+                .foregroundStyle(Palette.quaternary)
         }
     }
 }
@@ -113,7 +120,7 @@ struct TimerExpandedView: View {
         .padding(2)
         .background(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(.white.opacity(0.06))
+                .fill(Palette.card)
         )
     }
 
@@ -124,14 +131,14 @@ struct TimerExpandedView: View {
                 Image(systemName: icon)
                     .font(.system(size: 9, weight: .medium))
                 Text(label)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(Typography.labelMedium)
             }
-            .foregroundStyle(.white.opacity(isActive ? 0.95 : 0.5))
+            .foregroundStyle(isActive ? Palette.primary : Palette.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 3)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isActive ? .white.opacity(0.12) : .clear)
+                    .fill(isActive ? Palette.highlight : .clear)
             )
         }
         .buttonStyle(.plain)
@@ -147,13 +154,14 @@ struct TimerExpandedView: View {
                     onSetPreset(preset.seconds)
                 } label: {
                     Text(preset.label)
-                        .font(.system(size: 10, weight: isActive ? .semibold : .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(isActive ? 0.95 : 0.55))
+                        .font(isActive ? Typography.label : Typography.labelMedium)
+                        .monospacedDigit()
+                        .foregroundStyle(isActive ? Palette.primary : Palette.secondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(isActive ? .white.opacity(0.10) : .clear)
+                                .fill(isActive ? Palette.highlight : .clear)
                         )
                 }
                 .buttonStyle(.plain)
@@ -165,7 +173,7 @@ struct TimerExpandedView: View {
 
     private var timeDisplay: some View {
         Text(displayString)
-            .font(.system(size: 28, weight: .semibold, design: .monospaced))
+            .font(Typography.hero)
             .foregroundStyle(displayTint)
             .monospacedDigit()
             .contentTransition(.numericText())
@@ -181,7 +189,7 @@ struct TimerExpandedView: View {
 
     private var displayTint: Color {
         if state.mode == .timer && state.phase == .finished { return .yellow }
-        return .white.opacity(0.95)
+        return Palette.primary
     }
 
     // MARK: Actions
@@ -202,11 +210,11 @@ struct TimerExpandedView: View {
         } label: {
             Image(systemName: state.phase == .running ? "pause.fill" : "play.fill")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.95))
+                .foregroundStyle(Palette.primary)
                 .frame(width: 28, height: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(.white.opacity(0.12))
+                        .fill(Palette.highlight)
                 )
         }
         .buttonStyle(.plain)
@@ -216,7 +224,7 @@ struct TimerExpandedView: View {
         Button(action: onReset) {
             Image(systemName: "arrow.counterclockwise")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(Palette.secondary)
                 .frame(width: 24, height: 22)
         }
         .buttonStyle(.plain)

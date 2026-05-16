@@ -66,7 +66,7 @@ final class PanelManager {
             }
             let notchHeight = screen.safeAreaTop > 0
                 ? screen.safeAreaTop
-                : NotchGeometry.syntheticSize.height
+                : NotchGeometry.syntheticHeight(for: screen)
             panel.install(content: NotchSurfaceView(
                 expansion: expansion,
                 active: active,

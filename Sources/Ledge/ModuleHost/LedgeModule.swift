@@ -7,6 +7,11 @@ protocol LedgeModule: AnyObject {
     static var identifier: String { get }
     var displayName: String { get }
 
+    /// SF Symbol name shown in the module switcher tab and the Settings module
+    /// list. Inactive tabs show just this icon (saves horizontal space); the
+    /// active tab shows the icon plus `displayName`.
+    var iconName: String { get }
+
     var collapsedView: AnyView { get }
     var expandedView: AnyView { get }
 
@@ -27,9 +32,10 @@ protocol LedgeModule: AnyObject {
 }
 
 extension LedgeModule {
+    var iconName: String { "puzzlepiece.extension" }
     var acceptsDrops: Bool { false }
     func handleDrop(_ providers: [NSItemProvider]) -> Bool { false }
-    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 140) }
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 160) }
     var wantsKeyboardFocus: Bool { false }
     func didActivate() {}
     func willDeactivate() {}

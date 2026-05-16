@@ -22,7 +22,10 @@ final class NotchPanel: NSPanel {
         )
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        // System shadow gives the expanded drawer elevation against the
+        // desktop. Harmless on the collapsed notch (the shadow is shaped by
+        // the opaque content, which on a real notch sits on the black bezel).
+        hasShadow = true
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         isMovable = false

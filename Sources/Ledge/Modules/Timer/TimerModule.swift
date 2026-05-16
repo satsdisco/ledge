@@ -4,6 +4,7 @@ import AppKit
 final class TimerModule: LedgeModule {
     static let identifier = "com.satsdisco.ledge.module.timer"
     let displayName = "Timer"
+    let iconName = "timer"
 
     let state = TimerRunState()
     private var tickTimer: Timer?
@@ -47,7 +48,7 @@ final class TimerModule: LedgeModule {
     /// Bumped from 180 to accommodate the mode toggle row added on top of
     /// the original (presets + countdown + actions) layout. Without the
     /// extra height, content overflows into the notch tongue at the top.
-    var preferredExpandedSize: CGSize { CGSize(width: 420, height: 220) }
+    var preferredExpandedSize: CGSize { CGSize(width: 540, height: 240) }
 
     // MARK: - Mode
 

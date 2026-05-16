@@ -21,6 +21,17 @@
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
 
+    <!-- EventKit access for the Calendar module. Documented by Apple as
+         sandbox-only, but verified empirically on macOS 26: without this
+         entitlement, requestFullAccessToEvents() silently no-ops in
+         LSUIElement apps even when properly Developer-ID signed and with
+         NSCalendarsFullAccessUsageDescription in Info.plist. We test that
+         notarization still accepts the build (see scripts/release.sh) — if
+         Apple ever rejects, the alternative is to drop LSUIElement and run
+         as a regular foreground app. -->
+    <key>com.apple.security.personal-information.calendars</key>
+    <true/>
+
     <!-- Ledge is NOT sandboxed in v1. Direct download via Developer ID,
          not Mac App Store, so we don't need (and don't want) the sandbox
          restrictions yet. If we ever ship to the App Store, set

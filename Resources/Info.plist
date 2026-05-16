@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.4</string>
+    <string>1.0.5</string>
     <key>CFBundleVersion</key>
-    <string>13</string>
+    <string>14</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSUIElement</key>
@@ -28,6 +28,8 @@
     <string>© 2026 satsdisco</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Ledge uses Apple Events to read and control media playback as a fallback when the system media APIs are unavailable.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Ledge reads your calendar events to show your day in the notch. Nothing is uploaded.</string>
 
     <!--
         Sparkle auto-update configuration. Until populated, Sparkle will be

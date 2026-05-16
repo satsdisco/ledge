@@ -16,6 +16,7 @@ final class RootCoordinator {
     private lazy var bitcoin = BitcoinPriceModule(environment: env)
     private lazy var clipboard = ClipboardModule(environment: env)
     private lazy var notes = NotesModule(environment: env)
+    private lazy var calendar = CalendarModule(environment: env)
 
     private static let allModuleIDs: [String] = [
         FileShelfModule.identifier,
@@ -24,7 +25,8 @@ final class RootCoordinator {
         ClocksModule.identifier,
         BitcoinPriceModule.identifier,
         ClipboardModule.identifier,
-        NotesModule.identifier
+        NotesModule.identifier,
+        CalendarModule.identifier
     ]
 
     /// Exposed for Settings UI so it can edit the clocks list live.
@@ -40,7 +42,7 @@ final class RootCoordinator {
         expansion: expansion,
         active: active,
         enabled: enabledStore,
-        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin, clipboard, notes]
+        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin, clipboard, notes, calendar]
     )
 
     /// Display info for Settings to render the modules list with names + icons.
@@ -52,7 +54,8 @@ final class RootCoordinator {
             (ClocksModule.identifier,       "Clocks",      "globe"),
             (BitcoinPriceModule.identifier, "Bitcoin",     "bitcoinsign.circle"),
             (ClipboardModule.identifier,    "Clipboard",   "doc.on.clipboard"),
-            (NotesModule.identifier,        "Notes",       "square.and.pencil")
+            (NotesModule.identifier,        "Notes",       "square.and.pencil"),
+            (CalendarModule.identifier,     "Calendar",    "calendar")
         ]
     }
     private lazy var displays = DisplayCoordinator { [weak self] screens in
@@ -74,6 +77,7 @@ final class RootCoordinator {
         registry.register(bitcoin)
         registry.register(clipboard)
         registry.register(notes)
+        registry.register(calendar)
         registry.bootstrap()
         _ = shortcuts
         displays.start()

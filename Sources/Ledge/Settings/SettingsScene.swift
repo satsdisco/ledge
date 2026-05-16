@@ -605,7 +605,7 @@ private struct AboutPane: View {
                     ))
                 Image(systemName: "rectangle.portrait.topthird.inset.filled")
                     .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(Palette.primary)
             }
             .frame(width: 92, height: 92)
             .shadow(color: .black.opacity(0.2), radius: 8, y: 2)
