@@ -7,6 +7,28 @@
         <language>en</language>
 
         <item>
+            <title>1.0.5</title>
+            <pubDate>Sat, 16 May 2026 19:05:05 +0000</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>Calendar, volume, time conversion + lots of polish</h3>
+                <ul>
+                    <li><strong>Calendar module</strong> &mdash; today's agenda and next meeting at a glance, with join buttons for video links.</li>
+                    <li><strong>Volume + AirPlay</strong> &mdash; control system output volume from Now Playing; one-click AirPlay picker.</li>
+                    <li><strong>Time conversion</strong> in Clocks &mdash; type &ldquo;3pm Dubai&rdquo; and see your local time.</li>
+                    <li><strong>Now Playing</strong> &mdash; album art for streaming Apple Music tracks, smooth progress bar, Love button.</li>
+                    <li>Notch is rounder and sits flush on external displays.</li>
+                    <li>Bitcoin sparkline polish, design-system pass across all modules.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/satsdisco/ledge/releases/download/v1.0.5/Ledge-1.0.5.dmg"
+                       sparkle:version="14"
+                       sparkle:shortVersionString="1.0.5"
+                       sparkle:edSignature="8y95gSRPchDcOMbfNEpsVPndN4Ma7IfxXnGDuNqF6dbRAu1FlJQHU/omGPR+rZ6o0EmkybzZKXovSktg6DCtDw==" length="3430285"
+                       type="application/octet-stream" />
+        </item>
+
+        <item>
             <title>1.0.4</title>
             <pubDate>Fri, 15 May 2026 17:24:06 +0000</pubDate>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
