@@ -7,6 +7,27 @@
         <language>en</language>
 
         <item>
+            <title>1.0.6</title>
+            <pubDate>Sat, 16 May 2026 21:08:55 +0000</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>Teleprompter, Pomodoro, Weather, and a smarter Calendar</h3>
+                <ul>
+                    <li><strong>Teleprompter</strong> &mdash; a new module for reading scripts in front of the camera with adjustable scroll speed.</li>
+                    <li><strong>Pomodoro</strong> &mdash; a third mode in the Timer module, alongside countdown and stopwatch.</li>
+                    <li><strong>Weather per clock</strong> &mdash; current condition and temperature on every Clocks tile, via Open-Meteo (no API key, no account).</li>
+                    <li><strong>Create events from the notch</strong> &mdash; inline new-event editor in the Calendar drawer. Title, date, time, duration, and calendar pulldown, all without leaving Ledge.</li>
+                    <li><strong>Busy / free check across time zones</strong> &mdash; when scrubbing a time in Clocks, each tile shows a pink &ldquo;busy&rdquo; pill or quiet green &ldquo;free&rdquo; dot derived from today&rsquo;s calendar &mdash; so you can answer &ldquo;is 3pm in Tokyo a good time?&rdquo; without leaving the panel.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/satsdisco/ledge/releases/download/v1.0.6/Ledge-1.0.6.dmg"
+                       sparkle:version="15"
+                       sparkle:shortVersionString="1.0.6"
+                       sparkle:edSignature="e8TgCgPd3yj+dfdqyin2YtgkMDNf61Y/kNJmB1HLTXSZcYL5LNbRhnRt5PxBRotDhpjBWKs1PxN1TElQIRZ+BA==" length="3606552"
+                       type="application/octet-stream" />
+        </item>
+
+        <item>
             <title>1.0.5</title>
             <pubDate>Sat, 16 May 2026 19:05:05 +0000</pubDate>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
