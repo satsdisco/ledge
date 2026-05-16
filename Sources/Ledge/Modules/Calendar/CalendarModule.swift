@@ -10,6 +10,16 @@ final class CalendarState {
     var events: [CalendarEvent] = []
     /// `Date()` at last refresh — used for "X min until" calculations.
     var refreshedAt: Date = Date()
+    /// Whether the inline new-event form is showing in the expanded view.
+    var isCreating: Bool = false
+    /// Writable calendars available for new events. Empty until auth.
+    var writableCalendars: [WritableCalendar] = []
+    /// Suggested calendar ID for a fresh new-event form. `nil` if the user
+    /// has no default-for-new-events configured and no writable calendar.
+    var defaultCalendarID: String?
+    /// Set after a failed save so the form can show the error inline. Cleared
+    /// when the user edits a field or dismisses the form.
+    var createError: String?
 }
 
 final class CalendarModule: LedgeModule {
@@ -19,9 +29,19 @@ final class CalendarModule: LedgeModule {
 
     @MainActor let state = CalendarState()
     @MainActor private let service = CalendarService()
+    private let busy: BusyIndex
     private var pollTimer: Timer?
 
+    /// Calendar is an ambient module by default, but it needs the panel to
+    /// become key while the inline new-event form is open so TextField and
+    /// Menu can receive input. Without this, typing into the title field
+    /// silently does nothing and the calendar pulldown won't open.
+    var wantsKeyboardFocus: Bool {
+        MainActor.assumeIsolated { state.isCreating }
+    }
+
     init(environment: ModuleEnvironment) {
+        self.busy = environment.busy
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.state.authStatus = self.service.currentStatus
@@ -38,7 +58,8 @@ final class CalendarModule: LedgeModule {
         AnyView(CalendarExpandedView(
             state: state,
             onRequestAccess: { [weak self] in await self?.requestAccess() },
-            onResetAndRetry: { [weak self] in await self?.resetAndRetry() }
+            onResetAndRetry: { [weak self] in await self?.resetAndRetry() },
+            onCreate: { [weak self] draft in await self?.createEvent(draft) ?? false }
         ))
     }
 
@@ -89,6 +110,45 @@ final class CalendarModule: LedgeModule {
         let end = cal.date(byAdding: .day, value: 1, to: start) ?? Date().addingTimeInterval(86_400)
         state.events = service.events(from: start, to: end)
         state.refreshedAt = Date()
+        if state.writableCalendars.isEmpty {
+            state.writableCalendars = service.writableCalendars()
+            state.defaultCalendarID = service.defaultWritableCalendarID
+                ?? state.writableCalendars.first?.id
+        }
+        // Skip all-day events: they shouldn't shade a 3pm scheduling lookup
+        // as "busy" — the user almost always means timed overlap.
+        busy.intervals = state.events
+            .filter { !$0.isAllDay }
+            .map { BusyInterval(start: $0.start, end: $0.end) }
+    }
+
+    /// Save a new event. Returns true on success so the view can dismiss the
+    /// form; false leaves the form up with `state.createError` populated.
+    @MainActor
+    func createEvent(_ draft: NewEventDraft) async -> Bool {
+        do {
+            _ = try service.createEvent(
+                title: draft.title,
+                start: draft.start,
+                end: draft.end,
+                calendarID: draft.calendarID,
+                isAllDay: draft.isAllDay,
+                notes: nil
+            )
+            state.createError = nil
+            state.isCreating = false
+            refresh()
+            return true
+        } catch CalendarService.CreateError.noWritableCalendar {
+            state.createError = "No writable calendar available."
+            return false
+        } catch CalendarService.CreateError.notAuthorized {
+            state.createError = "Calendar access was revoked."
+            return false
+        } catch {
+            state.createError = "Couldn't save event."
+            return false
+        }
     }
 
     private func startPolling() {

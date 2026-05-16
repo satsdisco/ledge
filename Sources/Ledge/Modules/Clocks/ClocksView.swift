@@ -37,6 +37,8 @@ struct ClocksExpandedView: View {
     @Bindable var store: ClocksStore
     @Bindable var ticker: ClocksTicker
     @Bindable var scrub: ClocksScrubController
+    @Bindable var weather: WeatherStore
+    @Bindable var busy: BusyIndex
 
     /// Two-way-bound draft that the DatePicker edits. We sync it with
     /// `scrub.offsetMinutes` via onChange so all paths (typing, +/− buttons,
@@ -230,12 +232,18 @@ struct ClocksExpandedView: View {
         let count = store.entries.count
         let columnCount = count <= 4 ? max(1, count) : 3
         let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)
+        // Only render the busy/free chip while scrubbing — at the live time
+        // the user already knows whether they're in a meeting. Pre-compute
+        // once so every tile gets the same answer for a given scrub instant.
+        let busyAtScrub: Bool? = scrub.isScrubbing ? busy.isBusy(at: effectiveTime) : nil
         return LazyVGrid(columns: columns, spacing: 12) {
             ForEach(store.entries) { entry in
                 ClockTileView(
                     entry: entry,
                     now: effectiveTime,
                     isScrubSource: scrub.sourceID == entry.id,
+                    weather: weather.snapshots[entry.timeZoneIdentifier],
+                    busyAtScrub: busyAtScrub,
                     onTap: { scrub.toggle(entry.id) }
                 )
             }
@@ -261,6 +269,11 @@ private struct ClockTileView: View {
     let entry: ClockEntry
     let now: Date
     let isScrubSource: Bool
+    let weather: WeatherSnapshot?
+    /// nil = not scrubbing (don't render). true = user is busy at the scrubbed
+    /// instant. false = user is free. Identical across tiles because the
+    /// underlying moment is the same — only the wall-clock rendering differs.
+    let busyAtScrub: Bool?
     let onTap: () -> Void
 
     private var isLocal: Bool {
@@ -294,6 +307,19 @@ private struct ClockTileView: View {
                     .font(Typography.meta)
                     .foregroundStyle(Palette.tertiary)
                     .lineLimit(1)
+                if let weather {
+                    HStack(spacing: 3) {
+                        Image(systemName: weather.iconName)
+                            .font(.system(size: 9, weight: .medium))
+                        Text("\(Int(weather.temperatureCelsius.rounded()))°")
+                            .font(Typography.meta)
+                            .monospacedDigit()
+                    }
+                    .foregroundStyle(Palette.secondary)
+                }
+                if let busyAtScrub {
+                    busyChip(busy: busyAtScrub)
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -331,6 +357,37 @@ private struct ClockTileView: View {
                     .tracking(-0.5)
                     .contentTransition(.numericText())
                     .animation(.easeOut(duration: 0.12), value: now)
+            }
+        }
+    }
+
+    /// Busy = pink pill with label (loud, because a conflict is the
+    /// surprising answer). Free = tiny green dot with a quiet "free" label
+    /// — present so the absence of a busy pill doesn't read as "no data".
+    @ViewBuilder
+    private func busyChip(busy: Bool) -> some View {
+        if busy {
+            HStack(spacing: 3) {
+                Circle()
+                    .fill(Palette.accent)
+                    .frame(width: 4, height: 4)
+                Text("busy")
+                    .font(Typography.glance)
+                    .foregroundStyle(Palette.accent)
+                    .tracking(0.4)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background(Capsule().fill(Palette.accent.opacity(0.16)))
+        } else {
+            HStack(spacing: 3) {
+                Circle()
+                    .fill(.green.opacity(0.85))
+                    .frame(width: 4, height: 4)
+                Text("free")
+                    .font(Typography.glance)
+                    .foregroundStyle(Palette.tertiary)
+                    .tracking(0.4)
             }
         }
     }

@@ -8,7 +8,7 @@ struct TimerCollapsedView: View {
     var body: some View {
         HStack(spacing: 4) {
             switch state.mode {
-            case .timer: timerCollapsed
+            case .timer, .pomodoro: timerCollapsed
             case .stopwatch: stopwatchCollapsed
             }
         }
@@ -99,6 +99,8 @@ struct TimerExpandedView: View {
             modeToggle
             if state.mode == .timer {
                 presetsRow
+            } else if state.mode == .pomodoro {
+                pomodoroStatus
             }
             Spacer(minLength: 0)
             timeDisplay
@@ -116,12 +118,59 @@ struct TimerExpandedView: View {
         HStack(spacing: 0) {
             modeButton(.timer,     label: "Timer",     icon: "timer")
             modeButton(.stopwatch, label: "Stopwatch", icon: "stopwatch")
+            modeButton(.pomodoro,  label: "Pomodoro",  icon: "leaf.fill")
         }
         .padding(2)
         .background(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(Palette.card)
         )
+    }
+
+    // MARK: Pomodoro status
+
+    private var pomodoroStatus: some View {
+        HStack(spacing: 6) {
+            Image(systemName: pomodoroIcon)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(pomodoroTint)
+            Text(pomodoroLabel)
+                .font(Typography.label)
+                .foregroundStyle(Palette.primary)
+            Spacer()
+            if state.pomodoroCompletedSessions > 0 {
+                Text("\(state.pomodoroCompletedSessions) ✓")
+                    .font(Typography.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(Palette.secondary)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(Capsule().fill(Palette.highlight))
+    }
+
+    private var pomodoroIcon: String {
+        switch state.pomodoroPhase {
+        case .work:       return "brain.head.profile"
+        case .shortBreak: return "cup.and.saucer.fill"
+        case .longBreak:  return "moon.zzz.fill"
+        }
+    }
+
+    private var pomodoroLabel: String {
+        switch state.pomodoroPhase {
+        case .work:       return "Focus"
+        case .shortBreak: return "Short break"
+        case .longBreak:  return "Long break"
+        }
+    }
+
+    private var pomodoroTint: Color {
+        switch state.pomodoroPhase {
+        case .work:       return Palette.accent
+        case .shortBreak, .longBreak: return .green
+        }
     }
 
     private func modeButton(_ mode: TimerRunState.Mode, label: String, icon: String) -> some View {
@@ -182,7 +231,7 @@ struct TimerExpandedView: View {
 
     private var displayString: String {
         switch state.mode {
-        case .timer:    return state.formatted
+        case .timer, .pomodoro: return state.formatted
         case .stopwatch: return state.formattedElapsed
         }
     }

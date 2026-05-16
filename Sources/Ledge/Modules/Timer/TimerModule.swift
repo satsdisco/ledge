@@ -67,8 +67,40 @@ final class TimerModule: LedgeModule {
             state.elapsedSeconds = 0
             swStartDate = nil
             swAccumulated = 0
+        case .pomodoro:
+            state.pomodoroPhase = .work
+            state.pomodoroCompletedSessions = 0
+            state.totalSeconds = state.pomodoroWorkSeconds
+            state.remainingSeconds = state.pomodoroWorkSeconds
         }
         UserDefaults.standard.set(newMode.rawValue, forKey: modeKey)
+    }
+
+    /// Length in seconds for the upcoming pomodoro phase.
+    private func durationForCurrentPomodoroPhase() -> Int {
+        switch state.pomodoroPhase {
+        case .work:       return state.pomodoroWorkSeconds
+        case .shortBreak: return state.pomodoroShortBreakSeconds
+        case .longBreak:  return state.pomodoroLongBreakSeconds
+        }
+    }
+
+    /// On finish: tick the cycle forward. Work → short or long break →
+    /// back to work. Long break every Nth session.
+    private func advancePomodoroPhase() {
+        switch state.pomodoroPhase {
+        case .work:
+            state.pomodoroCompletedSessions += 1
+            state.pomodoroPhase =
+                (state.pomodoroCompletedSessions % state.pomodoroLongBreakInterval == 0)
+                ? .longBreak : .shortBreak
+        case .shortBreak, .longBreak:
+            state.pomodoroPhase = .work
+        }
+        let duration = durationForCurrentPomodoroPhase()
+        state.totalSeconds = duration
+        state.remainingSeconds = duration
+        state.phase = .idle
     }
 
     // MARK: - Intents (mode-aware)
@@ -85,15 +117,15 @@ final class TimerModule: LedgeModule {
 
     func start() {
         switch state.mode {
-        case .timer:    startTimer()
-        case .stopwatch: startStopwatch()
+        case .timer, .pomodoro: startTimer()
+        case .stopwatch:        startStopwatch()
         }
     }
 
     func pause() {
         guard state.phase == .running else { return }
         switch state.mode {
-        case .timer:
+        case .timer, .pomodoro:
             stopTicks()
         case .stopwatch:
             if let started = swStartDate {
@@ -116,6 +148,11 @@ final class TimerModule: LedgeModule {
             swStartDate = nil
             swAccumulated = 0
             state.elapsedSeconds = 0
+        case .pomodoro:
+            state.pomodoroPhase = .work
+            state.pomodoroCompletedSessions = 0
+            state.totalSeconds = state.pomodoroWorkSeconds
+            state.remainingSeconds = state.pomodoroWorkSeconds
         }
         state.phase = .idle
     }
@@ -123,11 +160,20 @@ final class TimerModule: LedgeModule {
     // MARK: - Timer (countdown)
 
     private func startTimer() {
+        // For pomodoro, the seed duration comes from the current phase
+        // (work / short break / long break) rather than the user's manual
+        // preset. Otherwise, behaves identically to the countdown path.
+        let seed: Int = {
+            switch state.mode {
+            case .pomodoro: return durationForCurrentPomodoroPhase()
+            default:        return state.lastPresetSeconds
+            }
+        }()
         switch state.phase {
         case .idle, .finished:
-            state.totalSeconds = state.lastPresetSeconds
-            state.remainingSeconds = state.lastPresetSeconds
-            endDate = Date().addingTimeInterval(TimeInterval(state.lastPresetSeconds))
+            state.totalSeconds = seed
+            state.remainingSeconds = seed
+            endDate = Date().addingTimeInterval(TimeInterval(seed))
         case .paused:
             endDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
         case .running:
@@ -143,10 +189,18 @@ final class TimerModule: LedgeModule {
         let remaining = Int(end.timeIntervalSinceNow.rounded())
         if remaining <= 0 {
             state.remainingSeconds = 0
-            state.phase = .finished
             stopTicks()
             NSSound(named: .init("Glass"))?.play()
-            Log.module.info("Timer finished")
+            if state.mode == .pomodoro {
+                advancePomodoroPhase()
+                Log.module.info("Pomodoro phase \(self.state.pomodoroPhase.rawValue, privacy: .public) complete; cycle \(self.state.pomodoroCompletedSessions)")
+                // Auto-roll into the next phase so the user doesn't have to
+                // hit play again between work and break.
+                startTimer()
+            } else {
+                state.phase = .finished
+                Log.module.info("Timer finished")
+            }
         } else {
             state.remainingSeconds = remaining
         }
@@ -183,8 +237,8 @@ final class TimerModule: LedgeModule {
         let t = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self else { return }
             switch self.state.mode {
-            case .timer:    self.tickTimer_()
-            case .stopwatch: self.tickStopwatch()
+            case .timer, .pomodoro: self.tickTimer_()
+            case .stopwatch:        self.tickStopwatch()
             }
         }
         RunLoop.main.add(t, forMode: .common)

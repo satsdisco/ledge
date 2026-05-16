@@ -4,10 +4,25 @@ import Observation
 @Observable
 final class TimerRunState {
     enum Phase: Equatable { case idle, running, paused, finished }
-    enum Mode: String, Codable, Equatable { case timer, stopwatch }
+    enum Mode: String, Codable, Equatable { case timer, stopwatch, pomodoro }
+    /// Which leg of a pomodoro cycle we're on. Ignored when mode != .pomodoro.
+    enum PomodoroPhase: String, Codable { case work, shortBreak, longBreak }
 
     var mode: Mode = .timer
     var phase: Phase = .idle
+
+    // MARK: Pomodoro state
+
+    var pomodoroPhase: PomodoroPhase = .work
+    /// How many completed work sessions in the current streak. Resets when
+    /// the user manually exits pomodoro or after a long break.
+    var pomodoroCompletedSessions: Int = 0
+    /// Lengths in seconds — exposed so we can tweak later from Settings.
+    var pomodoroWorkSeconds: Int = 25 * 60
+    var pomodoroShortBreakSeconds: Int = 5 * 60
+    var pomodoroLongBreakSeconds: Int = 15 * 60
+    /// After how many work sessions to take a long break instead of short.
+    var pomodoroLongBreakInterval: Int = 4
 
     // MARK: Timer (countdown) state
 

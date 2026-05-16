@@ -8,7 +8,8 @@ final class RootCoordinator {
 
     private let registry = ModuleRegistry()
     private let expansion = NotchExpansionController()
-    private lazy var env = ModuleEnvironment(expansion: expansion)
+    private let busy = BusyIndex()
+    private lazy var env = ModuleEnvironment(expansion: expansion, busy: busy)
     private lazy var fileShelf = FileShelfModule(environment: env)
     private lazy var nowPlaying = NowPlayingModule(environment: env)
     private lazy var timer = TimerModule(environment: env)
@@ -17,6 +18,7 @@ final class RootCoordinator {
     private lazy var clipboard = ClipboardModule(environment: env)
     private lazy var notes = NotesModule(environment: env)
     private lazy var calendar = CalendarModule(environment: env)
+    private lazy var teleprompter = TeleprompterModule(environment: env)
 
     private static let allModuleIDs: [String] = [
         FileShelfModule.identifier,
@@ -26,7 +28,8 @@ final class RootCoordinator {
         BitcoinPriceModule.identifier,
         ClipboardModule.identifier,
         NotesModule.identifier,
-        CalendarModule.identifier
+        CalendarModule.identifier,
+        TeleprompterModule.identifier
     ]
 
     /// Exposed for Settings UI so it can edit the clocks list live.
@@ -42,7 +45,7 @@ final class RootCoordinator {
         expansion: expansion,
         active: active,
         enabled: enabledStore,
-        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin, clipboard, notes, calendar]
+        modules: [fileShelf, nowPlaying, timer, clocks, bitcoin, clipboard, notes, calendar, teleprompter]
     )
 
     /// Display info for Settings to render the modules list with names + icons.
@@ -55,7 +58,8 @@ final class RootCoordinator {
             (BitcoinPriceModule.identifier, "Bitcoin",     "bitcoinsign.circle"),
             (ClipboardModule.identifier,    "Clipboard",   "doc.on.clipboard"),
             (NotesModule.identifier,        "Notes",       "square.and.pencil"),
-            (CalendarModule.identifier,     "Calendar",    "calendar")
+            (CalendarModule.identifier,     "Calendar",    "calendar"),
+            (TeleprompterModule.identifier, "Teleprompter", "text.viewfinder")
         ]
     }
     private lazy var displays = DisplayCoordinator { [weak self] screens in
@@ -78,6 +82,7 @@ final class RootCoordinator {
         registry.register(clipboard)
         registry.register(notes)
         registry.register(calendar)
+        registry.register(teleprompter)
         registry.bootstrap()
         _ = shortcuts
         displays.start()

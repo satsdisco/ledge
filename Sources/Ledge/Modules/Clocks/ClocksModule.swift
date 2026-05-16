@@ -14,11 +14,23 @@ final class ClocksModule: LedgeModule {
     let store = ClocksStore()
     let ticker = ClocksTicker()
     let scrub = ClocksScrubController()
+    let weatherStore = WeatherStore()
+    /// Shared with Calendar via the environment so the scrub bar can render
+    /// a "you'd be busy at this time" indicator without owning EventKit here.
+    let busy: BusyIndex
+    @MainActor private lazy var weatherService = WeatherService(store: weatherStore)
     private var tickTimer: Timer?
 
     init(environment: ModuleEnvironment) {
+        self.busy = environment.busy
         store.load()
         startTicking()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.weatherService.startPolling { [weak self] in
+                self?.store.entries.map(\.timeZoneIdentifier) ?? []
+            }
+        }
     }
 
     var collapsedView: AnyView {
@@ -26,7 +38,7 @@ final class ClocksModule: LedgeModule {
     }
 
     var expandedView: AnyView {
-        AnyView(ClocksExpandedView(store: store, ticker: ticker, scrub: scrub))
+        AnyView(ClocksExpandedView(store: store, ticker: ticker, scrub: scrub, weather: weatherStore, busy: busy))
     }
 
     /// Opt in to keyboard focus so arrow keys can drive scrub mode. The
