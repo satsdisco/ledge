@@ -85,24 +85,41 @@ enum NotchGeometry {
         screen.safeAreaTop > 0 && screen.auxiliaryTopLeft != nil && screen.auxiliaryTopRight != nil
     }
 
-    /// The visible panel frame when collapsed. The panel covers the notch rect (those
-    /// pixels are the hardware cutout and are already black) plus a "tongue" extending
-    /// downward past the notch so the panel is actually visible.
+    /// The visible panel frame when collapsed.
+    ///
+    /// On a hardware notch, the rect Ledge derives from `auxiliaryTopLeftArea`
+    /// and `auxiliaryTopRightArea` is wider and taller than the physical
+    /// camera-housing cutout: macOS reserves a small bezel margin around the
+    /// housing where menu-bar content isn't allowed, so the auxiliary-area
+    /// gap is larger than the cutout itself. Subtracting that margin keeps
+    /// the panel inside the cutout — see the inline comment for the empirical
+    /// values. On the synthetic notch (non-notched displays), the rect is the
+    /// panel target as-is; no margin to subtract.
     static func collapsedPanelRect(
         for screen: ScreenDescriptor,
         synthetic: Bool,
-        tongue: CGFloat = 0,
-        horizontalInset: CGFloat = 1
+        tongue: CGFloat = 0
     ) -> CGRect? {
         guard let notch = notchRect(for: screen, synthetic: synthetic) else { return nil }
-        // Inset horizontally by 1pt to absorb sub-pixel rounding on
-        // auxiliaryTopLeftArea.maxX / auxiliaryTopRightArea.minX, which can
-        // otherwise leave a hairline of panel fill outside the physical cutout.
+        // Empirical values measured on Mac17,2 (14" MacBook Pro M4 / macOS 26.5):
+        // the auxiliary-area gap is 185×32pt while the physical cutout is
+        // ~181×31pt — i.e. the gap is ~3pt wider per side and ~1pt taller than
+        // the cutout. Without subtracting those, the panel overhangs and the
+        // black fill shows on the bezel (right/left) or menu bar (bottom). A
+        // few invisible points of inset inside the cutout are harmless — those
+        // pixels are the physical camera housing, already black.
+        let (hMargin, vMargin): (CGFloat, CGFloat) = hasHardwareNotch(screen)
+            ? (3, 1)
+            : (0, 0)
+        let left = notch.minX + hMargin
+        let right = notch.maxX - hMargin
+        let bottom = notch.minY + vMargin - tongue
+        guard right > left else { return nil }
         return CGRect(
-            x: notch.minX + horizontalInset,
-            y: notch.minY - tongue,
-            width: notch.width - horizontalInset * 2,
-            height: notch.height + tongue
+            x: left,
+            y: bottom,
+            width: right - left,
+            height: notch.maxY - bottom
         )
     }
 
