@@ -64,15 +64,17 @@ final class PanelManager {
                 guard let self else { return false }
                 return self.activeModule()?.wantsKeyboardFocus ?? false
             }
-            let notchHeight = screen.safeAreaTop > 0
+            let hardware = NotchGeometry.hasHardwareNotch(screen)
+            let notchHeight = hardware
                 ? screen.safeAreaTop
-                : NotchGeometry.syntheticHeight(for: screen)
+                : NotchGeometry.syntheticHeight
             panel.install(content: NotchSurfaceView(
                 expansion: expansion,
                 active: active,
                 enabled: enabled,
                 modules: modules,
-                notchHeight: notchHeight
+                notchHeight: notchHeight,
+                isSynthetic: !hardware
             ))
             panel.show()
             panels[screen.displayID] = panel

@@ -36,22 +36,14 @@ extension NSScreen {
 }
 
 enum NotchGeometry {
-    /// Width of the synthetic notch — picked to match the visual weight of a
-    /// real 14"/16" MacBook notch (~200pt regardless of screen width).
-    static let syntheticWidth: CGFloat = 200
-
-    /// Fallback synthetic notch height when the screen has no menu bar
-    /// (e.g., menu bar autohidden, fullscreen app). Matches the standard
-    /// macOS menu bar on non-notched displays.
-    static let syntheticHeightFallback: CGFloat = 24
-
-    /// Synthetic notch height for a given screen. Tracks the actual menu bar
-    /// height so the panel sits flush within the menu bar rather than
-    /// overhanging onto the desktop.
-    static func syntheticHeight(for screen: ScreenDescriptor) -> CGFloat {
-        let menu = screen.menuBarHeight
-        return menu > 0 ? menu : syntheticHeightFallback
-    }
+    /// Synthetic notch dimensions on screens without a hardware notch.
+    /// 185 × 32 pt matches the real 14" MacBook Pro notch (the canonical MBP
+    /// form factor; Apple has kept these physical dimensions identical from
+    /// M1 Pro through M4 Pro/Max). On a typical 24 pt menu bar the synthetic
+    /// notch protrudes ~8 pt below into the desktop — mirroring the way a
+    /// real notch sits taller than a non-notched menu bar.
+    static let syntheticWidth: CGFloat = 185
+    static let syntheticHeight: CGFloat = 32
 
     /// Returns the notch rect for a given screen, in global (bottom-left origin) coordinates,
     /// or `nil` if the screen has no notch and synthetic mode is off.
@@ -69,7 +61,7 @@ enum NotchGeometry {
 
         if synthetic {
             let width = syntheticWidth
-            let height = syntheticHeight(for: screen)
+            let height = syntheticHeight
             // Round to whole pixels so the rounded-corner edges anti-alias
             // crisply (sub-pixel x on odd-width screens softens the silhouette).
             let x = (screen.frame.midX - width / 2).rounded()

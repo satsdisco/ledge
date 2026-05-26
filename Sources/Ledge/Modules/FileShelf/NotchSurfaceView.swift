@@ -12,6 +12,13 @@ struct NotchSurfaceView: View {
     /// Height of the physical notch cutout on this screen. Used to push
     /// expanded content below the cutout region so it isn't hidden.
     let notchHeight: CGFloat
+    /// True when this panel renders a synthetic notch on a screen without
+    /// a hardware notch. Drives the collapsed silhouette: synthetic uses a
+    /// soft tongue, hardware traces the physical cutout.
+    let isSynthetic: Bool
+
+    /// Corner radius of the collapsed synthetic "tongue" bottom corners.
+    private let collapsedCornerRadius: CGFloat = 8
 
     /// Modules visible after the user's enable/disable choices.
     private var visibleModules: [LedgeModule] {
@@ -27,7 +34,6 @@ struct NotchSurfaceView: View {
     }
 
     var body: some View {
-        let synthetic = FeatureFlags.syntheticNotch
         let expanded = expansion.phase == .expanded
         // Pure black surface — matches the iconic notch identity. The "liquid
         // glass" feel is delivered by a thin specular highlight along the top
@@ -40,7 +46,7 @@ struct NotchSurfaceView: View {
             .overlay(content)
             .overlay(
                 shape.stroke(
-                    .white.opacity(strokeOpacity(synthetic: synthetic, expanded: expanded)),
+                    .white.opacity(strokeOpacity(expanded: expanded)),
                     lineWidth: 1
                 )
             )
@@ -67,11 +73,10 @@ struct NotchSurfaceView: View {
 
     // MARK: - Style helpers
 
-    private func strokeOpacity(synthetic: Bool, expanded: Bool) -> Double {
+    private func strokeOpacity(expanded: Bool) -> Double {
         if dropTargeted { return 0.35 }
         if expanded { return 0.08 }    // faint rim — defines the drawer edge against wallpaper
-        if synthetic { return 0 }       // clean pill, no rim
-        return 0.06                     // real-notch collapsed: faint hairline
+        return 0.06                    // collapsed: faint hairline around the notch silhouette
     }
 
     /// Soft white-to-clear gradient pinned to the top edge of the shape.
@@ -91,27 +96,29 @@ struct NotchSurfaceView: View {
 
     // MARK: - Shape
 
-    /// Real notch: collapsed uses the hardware-matching cutout shape (concave
-    /// bottom fillets meet the screen bezel), expanded keeps a flat top
-    /// (hidden behind the bezel) with rounded bottom corners.
+    /// Collapsed silhouette depends on the screen:
+    ///   • Hardware notch — trace the physical cutout (`NotchCutoutShape`,
+    ///     concave bottom fillets) so the fill sits exactly inside the
+    ///     bezel. Hidden behind the bezel; unchanged from upstream.
+    ///   • Synthetic notch — a soft "tongue" hanging from the screen edge:
+    ///     flat top, vertical sides, CONVEX rounded bottom corners that
+    ///     flare out into the desktop (NotchNook-style). Reads as a notch
+    ///     belonging to the screen rather than a pill under the menu bar.
     ///
-    /// Synthetic notch (no hardware to align with): use a clean pill /
-    /// rounded rectangle so the panel reads as an intentional UI element
-    /// against the wallpaper instead of a notch-shaped silhouette hanging
-    /// in empty space.
+    /// Expanded: flat top with rounded bottom corners — the top meets the
+    /// screen bezel (real) or the screen edge (synthetic) either way.
     private var shape: AnyShape {
-        if FeatureFlags.syntheticNotch {
-            switch expansion.phase {
-            case .collapsed:
-                // True pill: corner radius = half the notch height, so the
-                // shape's left and right ends are perfect semicircles.
-                return AnyShape(RoundedRectangle(cornerRadius: notchHeight / 2, style: .continuous))
-            case .expanded:
-                return AnyShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            }
-        }
         switch expansion.phase {
         case .collapsed:
+            if isSynthetic {
+                return AnyShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: collapsedCornerRadius,
+                    bottomTrailingRadius: collapsedCornerRadius,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                ))
+            }
             return AnyShape(NotchCutoutShape(filletRadius: 10))
         case .expanded:
             return AnyShape(UnevenRoundedRectangle(
