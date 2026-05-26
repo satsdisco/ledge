@@ -38,6 +38,11 @@ enum Palette {
     /// The notch / collapsed pill itself. Always pure black.
     static let surface = Color.black
 
+    /// Lower end of the expanded drawer's background gradient — a near-black
+    /// grey the surface eases into below the notch band, lifting the drawer
+    /// body subtly off the pure-black notch.
+    static let drawerBase = Color(white: 0.1)
+
     // MARK: Accent
 
     /// The single accent color in Ledge. Currently the analog seconds-hand

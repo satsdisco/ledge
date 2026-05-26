@@ -13,6 +13,11 @@ struct NotchSurfaceView: View {
     /// expanded content below the cutout region so it isn't hidden.
     let notchHeight: CGFloat
 
+    /// Corner radius of the expanded drawer — the two bottom corners on a
+    /// real notch, all four on the synthetic pill. Shared by `shape` and the
+    /// `rim` so they trace the same curve.
+    private let expandedCornerRadius: CGFloat = 22
+
     /// Modules visible after the user's enable/disable choices.
     private var visibleModules: [LedgeModule] {
         modules.filter { enabled.isEnabled(type(of: $0).identifier) }
@@ -27,23 +32,13 @@ struct NotchSurfaceView: View {
     }
 
     var body: some View {
-        let synthetic = FeatureFlags.syntheticNotch
-        let expanded = expansion.phase == .expanded
-        // Pure black surface — matches the iconic notch identity. The "liquid
-        // glass" feel is delivered by a thin specular highlight along the top
-        // edge (in expanded state only, where it reads as a surface gleam
-        // rather than a notch reflection) plus the panel's drop shadow for
-        // elevation.
-        shape
-            .fill(Palette.surface)
-            .overlay(specularHighlight.opacity(expanded ? 1 : 0))
+        // The surface is pure OLED black across the notch band and eases into
+        // a slightly grayer black down the drawer (see `surfaceFill`). A faint
+        // rim traces the sides and bottom only — never the top edge, which
+        // meets the screen bezel — plus the panel's drop shadow for elevation.
+        surfaceFill
             .overlay(content)
-            .overlay(
-                shape.stroke(
-                    .white.opacity(strokeOpacity(synthetic: synthetic, expanded: expanded)),
-                    lineWidth: 1
-                )
-            )
+            .overlay(rim)
             .animation(Motion.express, value: expansion.phase)
             .animation(Motion.calm, value: active.activeID)
             .contentShape(Rectangle())
@@ -74,19 +69,45 @@ struct NotchSurfaceView: View {
         return 0.06                     // real-notch collapsed: faint hairline
     }
 
-    /// Soft white-to-clear gradient pinned to the top edge of the shape.
-    /// Reads as a specular gleam — the dark-glass equivalent of a highlight
-    /// without making the whole surface look gray.
-    private var specularHighlight: some View {
-        shape
-            .fill(
+    /// The panel's background fill: pure OLED black for the top band — about
+    /// the height of the physical notch — easing into a slightly grayer black
+    /// down the rest of the drawer. The collapsed panel is only as tall as the
+    /// notch, so the band covers it entirely and it stays pure black.
+    private var surfaceFill: some View {
+        GeometryReader { geo in
+            let height = geo.size.height
+            let band = height > 0 ? min(notchHeight / height, 1) : 1
+            shape.fill(
                 LinearGradient(
-                    colors: [Color.white.opacity(0.08), Color.white.opacity(0)],
+                    stops: [
+                        .init(color: Palette.surface, location: 0),
+                        .init(color: Palette.surface, location: band),
+                        .init(color: Palette.drawerBase, location: 1)
+                    ],
                     startPoint: .top,
-                    endPoint: .center
+                    endPoint: .bottom
                 )
             )
-            .blendMode(.plusLighter)
+        }
+    }
+
+    /// The edge rim. Expanded: traces the sides and bottom only — the top edge
+    /// meets the screen bezel and gets no rim. Collapsed: the full hairline
+    /// around the notch-cutout shape, unchanged.
+    @ViewBuilder
+    private var rim: some View {
+        let synthetic = FeatureFlags.syntheticNotch
+        let expanded = expansion.phase == .expanded
+        let color = Color.white.opacity(strokeOpacity(synthetic: synthetic, expanded: expanded))
+        if expanded {
+            PanelRim(
+                topRadius: synthetic ? expandedCornerRadius : 0,
+                bottomRadius: expandedCornerRadius
+            )
+            .stroke(color, lineWidth: 1)
+        } else {
+            shape.stroke(color, lineWidth: 1)
+        }
     }
 
     // MARK: - Shape
@@ -107,7 +128,7 @@ struct NotchSurfaceView: View {
                 // shape's left and right ends are perfect semicircles.
                 return AnyShape(RoundedRectangle(cornerRadius: notchHeight / 2, style: .continuous))
             case .expanded:
-                return AnyShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                return AnyShape(RoundedRectangle(cornerRadius: expandedCornerRadius, style: .continuous))
             }
         }
         switch expansion.phase {
@@ -116,8 +137,8 @@ struct NotchSurfaceView: View {
         case .expanded:
             return AnyShape(UnevenRoundedRectangle(
                 topLeadingRadius: 0,
-                bottomLeadingRadius: 22,
-                bottomTrailingRadius: 22,
+                bottomLeadingRadius: expandedCornerRadius,
+                bottomTrailingRadius: expandedCornerRadius,
                 topTrailingRadius: 0,
                 style: .continuous
             ))
@@ -221,6 +242,37 @@ struct NotchSurfaceView: View {
             return drop
         }
         return nil
+    }
+}
+
+// MARK: - Panel rim
+
+/// An open path tracing the left edge, bottom edge, and right edge of the
+/// expanded panel — but not the top. Stroked, it gives the drawer a rim on
+/// the sides and bottom only; the top edge meets the screen bezel.
+private struct PanelRim: Shape {
+    var topRadius: CGFloat
+    var bottomRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let tr = max(0, min(topRadius, rect.width / 2, rect.height / 2))
+        let br = max(0, min(bottomRadius, rect.width / 2, rect.height / 2))
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.minY + tr))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - br))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            radius: br
+        )
+        p.addLine(to: CGPoint(x: rect.maxX - br, y: rect.maxY))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.minY),
+            radius: br
+        )
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + tr))
+        return p
     }
 }
 
