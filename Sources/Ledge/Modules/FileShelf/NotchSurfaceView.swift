@@ -12,6 +12,9 @@ struct NotchSurfaceView: View {
     /// Height of the physical notch cutout on this screen. Used to push
     /// expanded content below the cutout region so it isn't hidden.
     let notchHeight: CGFloat
+    /// Width of the physical or synthetic notch cutout. The expanded real
+    /// notch shape uses this as its attached neck so it reads as one surface.
+    let notchWidth: CGFloat
 
     /// Modules visible after the user's enable/disable choices.
     private var visibleModules: [LedgeModule] {
@@ -92,8 +95,9 @@ struct NotchSurfaceView: View {
     // MARK: - Shape
 
     /// Real notch: collapsed uses the hardware-matching cutout shape (concave
-    /// bottom fillets meet the screen bezel), expanded keeps a flat top
-    /// (hidden behind the bezel) with rounded bottom corners.
+    /// bottom fillets meet the screen bezel), expanded grows from a narrow
+    /// notch-width neck into the wider drawer below the cutout. This avoids the
+    /// "floating rounded card" corners that fight the physical notch.
     ///
     /// Synthetic notch (no hardware to align with): use a clean pill /
     /// rounded rectangle so the panel reads as an intentional UI element
@@ -114,12 +118,11 @@ struct NotchSurfaceView: View {
         case .collapsed:
             return AnyShape(NotchCutoutShape(filletRadius: 10))
         case .expanded:
-            return AnyShape(UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: 22,
-                bottomTrailingRadius: 22,
-                topTrailingRadius: 0,
-                style: .continuous
+            return AnyShape(NotchAttachedDrawerShape(
+                notchWidth: notchWidth,
+                notchHeight: notchHeight,
+                shoulderRadius: 10,
+                bottomRadius: 22
             ))
         }
     }

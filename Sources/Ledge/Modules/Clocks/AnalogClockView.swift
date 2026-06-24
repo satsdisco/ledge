@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 struct AnalogClockView: View {
     let date: Date
@@ -19,10 +20,8 @@ struct AnalogClockView: View {
             // Tick marks at 12/3/6/9
             for i in 0..<4 {
                 let angle = Double(i) / 4 * 2 * .pi - .pi / 2
-                let outer = CGPoint(x: center.x + cos(angle) * (r - 1.5),
-                                    y: center.y + sin(angle) * (r - 1.5))
-                let inner = CGPoint(x: center.x + cos(angle) * (r - 3.5),
-                                    y: center.y + sin(angle) * (r - 3.5))
+                let outer = point(from: center, angle: angle, length: r - 1.5)
+                let inner = point(from: center, angle: angle, length: r - 3.5)
                 var tick = Path()
                 tick.move(to: inner)
                 tick.addLine(to: outer)
@@ -71,8 +70,14 @@ struct AnalogClockView: View {
     private func handPath(from center: CGPoint, angle: Double, length: CGFloat) -> Path {
         var p = Path()
         p.move(to: center)
-        p.addLine(to: CGPoint(x: center.x + cos(angle) * length,
-                              y: center.y + sin(angle) * length))
+        p.addLine(to: point(from: center, angle: angle, length: length))
         return p
+    }
+
+    private func point(from center: CGPoint, angle: Double, length: CGFloat) -> CGPoint {
+        CGPoint(
+            x: center.x + CGFloat(Darwin.cos(angle)) * length,
+            y: center.y + CGFloat(Darwin.sin(angle)) * length
+        )
     }
 }
