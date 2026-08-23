@@ -14,7 +14,12 @@ struct NotchSurfaceView: View {
     let notchHeight: CGFloat
     /// Width of the physical or synthetic notch cutout. The expanded real
     /// notch shape uses this as its attached neck so it reads as one surface.
+    /// Always the collapsed/inset width — not the raw auxiliary gap.
     let notchWidth: CGFloat
+    /// True when this panel renders a synthetic notch on a screen without
+    /// a hardware notch. Drives silhouette independently of the global flag
+    /// so a built-in notch stays a cutout when the flag is on.
+    let isSynthetic: Bool
 
     /// Modules visible after the user's enable/disable choices.
     private var visibleModules: [LedgeModule] {
@@ -30,23 +35,12 @@ struct NotchSurfaceView: View {
     }
 
     var body: some View {
-        let synthetic = FeatureFlags.syntheticNotch
-        let expanded = expansion.phase == .expanded
-        // Pure black surface — matches the iconic notch identity. The "liquid
-        // glass" feel is delivered by a thin specular highlight along the top
-        // edge (in expanded state only, where it reads as a surface gleam
-        // rather than a notch reflection) plus the panel's drop shadow for
-        // elevation.
-        shape
-            .fill(Palette.surface)
-            .overlay(specularHighlight.opacity(expanded ? 1 : 0))
+        // OLED black across the notch band, easing into drawerBase down the
+        // drawer (see `surfaceFill`). A faint rim traces the silhouette
+        // except the top edge, which meets the screen bezel.
+        surfaceFill
             .overlay(content)
-            .overlay(
-                shape.stroke(
-                    .white.opacity(strokeOpacity(synthetic: synthetic, expanded: expanded)),
-                    lineWidth: 1
-                )
-            )
+            .overlay(rim)
             .animation(Motion.express, value: expansion.phase)
             .animation(Motion.calm, value: active.activeID)
             .contentShape(Rectangle())
@@ -70,54 +64,90 @@ struct NotchSurfaceView: View {
 
     // MARK: - Style helpers
 
-    private func strokeOpacity(synthetic: Bool, expanded: Bool) -> Double {
+    private func strokeOpacity(expanded: Bool) -> Double {
         if dropTargeted { return 0.35 }
         if expanded { return 0.08 }    // faint rim — defines the drawer edge against wallpaper
-        if synthetic { return 0 }       // clean pill, no rim
-        return 0.06                     // real-notch collapsed: faint hairline
+        return 0.06                    // collapsed: faint hairline around the notch silhouette
     }
 
-    /// Soft white-to-clear gradient pinned to the top edge of the shape.
-    /// Reads as a specular gleam — the dark-glass equivalent of a highlight
-    /// without making the whole surface look gray.
-    private var specularHighlight: some View {
-        shape
-            .fill(
+    /// The panel's background fill: pure OLED black for the top band — about
+    /// the height of the physical notch — easing into a slightly grayer black
+    /// down the rest of the drawer. The collapsed panel is only as tall as the
+    /// notch, so the band covers it entirely and it stays pure black.
+    private var surfaceFill: some View {
+        GeometryReader { geo in
+            let height = geo.size.height
+            let band = height > 0 ? min(notchHeight / height, 1) : 1
+            shape.fill(
                 LinearGradient(
-                    colors: [Color.white.opacity(0.08), Color.white.opacity(0)],
+                    stops: [
+                        .init(color: Palette.surface, location: 0),
+                        .init(color: Palette.surface, location: band),
+                        .init(color: Palette.drawerBase, location: 1)
+                    ],
                     startPoint: .top,
-                    endPoint: .center
+                    endPoint: .bottom
                 )
             )
-            .blendMode(.plusLighter)
+        }
+    }
+
+    /// The edge rim. Expanded synthetic: sides + bottom of the flat-top
+    /// drawer (no top edge). Expanded hardware: the attached-drawer
+    /// silhouette minus the top neck (that edge sits on the cutout).
+    /// Collapsed: the full hairline around the cutout / tongue.
+    @ViewBuilder
+    private var rim: some View {
+        let expanded = expansion.phase == .expanded
+        let color = Color.white.opacity(strokeOpacity(expanded: expanded))
+        if expanded {
+            if isSynthetic {
+                PanelRim(topRadius: 0, bottomRadius: 22)
+                    .stroke(color, lineWidth: 1)
+            } else {
+                AttachedDrawerRim(
+                    notchWidth: notchWidth,
+                    notchHeight: notchHeight,
+                    shoulderRadius: 10,
+                    bottomRadius: 22
+                )
+                .stroke(color, lineWidth: 1)
+            }
+        } else {
+            shape.stroke(color, lineWidth: 1)
+        }
     }
 
     // MARK: - Shape
 
-    /// Real notch: collapsed uses the hardware-matching cutout shape (concave
-    /// bottom fillets meet the screen bezel), expanded grows from a narrow
-    /// notch-width neck into the wider drawer below the cutout. This avoids the
-    /// "floating rounded card" corners that fight the physical notch.
-    ///
-    /// Synthetic notch (no hardware to align with): use a clean pill /
-    /// rounded rectangle so the panel reads as an intentional UI element
-    /// against the wallpaper instead of a notch-shaped silhouette hanging
-    /// in empty space.
+    /// Silhouette is per-screen (`isSynthetic`), not the global flag:
+    ///   • Collapsed + synthetic — soft tongue: flat top, bottom r=8.
+    ///   • Collapsed + hardware — physical cutout (`NotchCutoutShape`).
+    ///   • Expanded + synthetic — flat-top drawer, bottom r=22.
+    ///   • Expanded + hardware — attached drawer with a notch-width neck.
     private var shape: AnyShape {
-        if FeatureFlags.syntheticNotch {
-            switch expansion.phase {
-            case .collapsed:
-                // True pill: corner radius = half the notch height, so the
-                // shape's left and right ends are perfect semicircles.
-                return AnyShape(RoundedRectangle(cornerRadius: notchHeight / 2, style: .continuous))
-            case .expanded:
-                return AnyShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            }
-        }
         switch expansion.phase {
         case .collapsed:
+            if isSynthetic {
+                return AnyShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 8,
+                    bottomTrailingRadius: 8,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                ))
+            }
             return AnyShape(NotchCutoutShape(filletRadius: 10))
         case .expanded:
+            if isSynthetic {
+                return AnyShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 22,
+                    bottomTrailingRadius: 22,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                ))
+            }
             return AnyShape(NotchAttachedDrawerShape(
                 notchWidth: notchWidth,
                 notchHeight: notchHeight,
@@ -224,6 +254,86 @@ struct NotchSurfaceView: View {
             return drop
         }
         return nil
+    }
+}
+
+// MARK: - Panel rim
+
+/// An open path tracing the left edge, bottom edge, and right edge of the
+/// expanded synthetic panel — but not the top. Stroked, it gives the drawer
+/// a rim on the sides and bottom only; the top edge meets the screen edge.
+private struct PanelRim: Shape {
+    var topRadius: CGFloat
+    var bottomRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let tr = max(0, min(topRadius, rect.width / 2, rect.height / 2))
+        let br = max(0, min(bottomRadius, rect.width / 2, rect.height / 2))
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.minY + tr))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - br))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            radius: br
+        )
+        p.addLine(to: CGPoint(x: rect.maxX - br, y: rect.maxY))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.minY),
+            radius: br
+        )
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + tr))
+        return p
+    }
+}
+
+/// Open path along the attached-drawer silhouette, omitting the top neck
+/// edge (that edge sits on the physical cutout / bezel). Geometry matches
+/// `NotchAttachedDrawerShape` so the stroke rides the fill, not the
+/// bounding box — a box rim would draw U-lines through the menu bar.
+private struct AttachedDrawerRim: Shape {
+    var notchWidth: CGFloat
+    var notchHeight: CGFloat
+    var shoulderRadius: CGFloat = 10
+    var bottomRadius: CGFloat = 22
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width
+        let h = rect.height
+        let neckWidth = min(max(notchWidth, notchHeight * 2), w)
+        let neckLeft = (w - neckWidth) / 2
+        let neckRight = (w + neckWidth) / 2
+        let joinY = min(max(notchHeight, 1), h)
+        let shoulder = min(shoulderRadius, neckLeft, w - neckRight, joinY)
+        let bottom = min(bottomRadius, w / 2, max(0, h - joinY))
+
+        p.move(to: CGPoint(x: neckRight, y: 0))
+        p.addLine(to: CGPoint(x: neckRight, y: joinY - shoulder))
+        p.addQuadCurve(
+            to: CGPoint(x: neckRight + shoulder, y: joinY),
+            control: CGPoint(x: neckRight, y: joinY)
+        )
+        p.addLine(to: CGPoint(x: w, y: joinY))
+        p.addLine(to: CGPoint(x: w, y: h - bottom))
+        p.addQuadCurve(
+            to: CGPoint(x: w - bottom, y: h),
+            control: CGPoint(x: w, y: h)
+        )
+        p.addLine(to: CGPoint(x: bottom, y: h))
+        p.addQuadCurve(
+            to: CGPoint(x: 0, y: h - bottom),
+            control: CGPoint(x: 0, y: h)
+        )
+        p.addLine(to: CGPoint(x: 0, y: joinY))
+        p.addLine(to: CGPoint(x: neckLeft - shoulder, y: joinY))
+        p.addQuadCurve(
+            to: CGPoint(x: neckLeft, y: joinY - shoulder),
+            control: CGPoint(x: neckLeft, y: joinY)
+        )
+        p.addLine(to: CGPoint(x: neckLeft, y: 0))
+        return p
     }
 }
 
