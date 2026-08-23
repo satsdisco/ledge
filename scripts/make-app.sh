@@ -65,7 +65,17 @@ for bundle in "$BIN_PATH"/*.bundle; do
     dest="$CONTENTS/Resources/$(basename "$bundle")"
     cp -R "$bundle" "$dest"
 
-    plist="$dest/Info.plist"
+    # SwiftPM used to emit a flat .bundle with Info.plist at the root.
+    # Newer toolchains emit a real Contents/ layout. Never create a root
+    # Info.plist next to Contents/ — codesign rejects that as unsealed.
+    if [[ -f "$dest/Contents/Info.plist" ]]; then
+        plist="$dest/Contents/Info.plist"
+    elif [[ -f "$dest/Info.plist" ]]; then
+        plist="$dest/Info.plist"
+    else
+        echo "⚠︎  No Info.plist in $dest — skipping resource-bundle backfill" >&2
+        continue
+    fi
     /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.satsdisco.ledge.resources.${name}" "$plist" 2>/dev/null \
         || /usr/libexec/PlistBuddy -c "Set  :CFBundleIdentifier com.satsdisco.ledge.resources.${name}" "$plist"
     /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string BNDL" "$plist" 2>/dev/null \
