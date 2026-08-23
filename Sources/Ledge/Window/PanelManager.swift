@@ -64,18 +64,25 @@ final class PanelManager {
                 guard let self else { return false }
                 return self.activeModule()?.wantsKeyboardFocus ?? false
             }
-            let notchRect = NotchGeometry.notchRect(for: screen, synthetic: FeatureFlags.syntheticNotch)
-            let notchHeight = screen.safeAreaTop > 0
+            let hardware = NotchGeometry.hasHardwareNotch(screen)
+            let notchHeight = hardware
                 ? screen.safeAreaTop
-                : NotchGeometry.syntheticHeight(for: screen)
-            let notchWidth = notchRect?.width ?? NotchGeometry.syntheticWidth
+                : NotchGeometry.syntheticHeight
+            // Neck width is the collapsed/inset rect, not the raw auxiliary
+            // gap — on Mac17,2 that is 179 rather than aux 185, so the
+            // attached drawer continues the physical cutout.
+            let notchWidth = NotchGeometry.collapsedPanelRect(
+                for: screen,
+                synthetic: FeatureFlags.syntheticNotch
+            )?.width ?? NotchGeometry.syntheticWidth
             panel.install(content: NotchSurfaceView(
                 expansion: expansion,
                 active: active,
                 enabled: enabled,
                 modules: modules,
                 notchHeight: notchHeight,
-                notchWidth: notchWidth
+                notchWidth: notchWidth,
+                isSynthetic: !hardware
             ))
             panel.show()
             panels[screen.displayID] = panel
