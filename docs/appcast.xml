@@ -7,6 +7,25 @@
         <language>en</language>
 
         <item>
+            <title>1.0.7</title>
+            <pubDate>Sun, 23 Aug 2026 11:26:46 +0000</pubDate>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h3>Notch fit</h3>
+                <ul>
+                    <li><strong>Sits in the cutout</strong> &mdash; the collapsed panel no longer overhangs the physical notch.</li>
+                    <li><strong>Expanded drawer blends into the notch</strong> &mdash; neck width matches the inset cutout; no window shadow hairline across the bezel.</li>
+                    <li><strong>Synthetic notch</strong> &mdash; hanging tongue on displays without a hardware notch, keyed per screen so a built-in notch stays a cutout when the flag is on.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/satsdisco/ledge/releases/download/v1.0.7/Ledge-1.0.7.dmg"
+                       sparkle:version="16"
+                       sparkle:shortVersionString="1.0.7"
+                       sparkle:edSignature="eg6mhEuyZpIsrQYToig9uwlv6zCLo2YYdhMFRzUwkBxSVE6whsVNI3Q3mScb/hGq+L+nk/3T4jl2EJJt7D7ECg==" length="3607782"
+                       type="application/octet-stream" />
+        </item>
+
+        <item>
             <title>1.0.6</title>
             <pubDate>Sat, 16 May 2026 21:08:55 +0000</pubDate>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
